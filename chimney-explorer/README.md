@@ -3,7 +3,7 @@
 An interactive chimney and fireplace guide for showing clients, on a phone or tablet, how each part works and what you repair.
 
 - **4 types:** Masonry Chimney, Wood-Burning Fireplace, Fireplace Insert, Chimney Chase
-- **2 visual versions:** *Realistic* (shaded render) and *Illustrated* (clean diagram). Switch with the toggle in the top bar. Both versions have the same parts, text and galleries.
+- **Realistic cutaway** of each type, with pinch-to-zoom (or the + / − buttons) and tappable parts.
 - **Part panels:** what the part is, common problems, what we do, and a Before/After gallery (side by side or slider)
 - **Owner mode** (lock icon): edit every text, upload, label, caption, reorder and delete photos and videos, drag hotspots, use your own photo as the background, set a phone number and an optional PIN, and back up or restore everything
 - Everything is saved in the browser's IndexedDB on the device. No server and no account needed.
@@ -55,3 +55,13 @@ node build.js                 # rebuilds dist/chimney-explorer.html
 ```
 
 Built-in photos are copied into the app's storage the first time it opens on a device, and the owner can edit, reorder or delete them like any upload. Labels are `before`, `after` or `during`; list each Before directly followed by its After. When the list changes, built-in items are reloaded (caption edits on them reset) but ones the owner deleted stay deleted.
+
+## Open-source libraries
+
+Bundled in `js/vendor` and `css/vendor`, all MIT licensed:
+
+- [Panzoom](https://github.com/timmywil/panzoom) 4.5.1: pinch and wheel zoom on the chimney
+- [img-comparison-slider](https://github.com/sneas/img-comparison-slider) 8.0.6: the Before/After slider
+- [PhotoSwipe](https://photoswipe.com) 5.4.4: full-screen photo and video viewer with swipe and zoom
+
+Example photos in "What it looks like" are CC-licensed (found through Openverse); each shows its photographer and license in the app.

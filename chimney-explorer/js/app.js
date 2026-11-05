@@ -78,7 +78,7 @@
   let cache = new Map();
 
   /* ================= state + content accessors ================= */
-  const state = { screen: 'home', type: null, style: 'real', owner: false, labels: true, part: null, moving: false, galMode: 'side', media: [] };
+  const state = { screen: 'home', type: null, style: 'real' /* realistic only */, owner: false, labels: true, part: null, moving: false, galMode: 'side', media: [] };
   const $ = (s, el) => (el || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const paras = (t) => String(t || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join('');
@@ -127,7 +127,6 @@
     ob.title = state.owner ? 'Leave owner mode' : 'Owner mode';
     $('#ownerBar').hidden = !state.owner;
     document.body.classList.toggle('owner', state.owner);
-    syncSeg($('#styleSeg'), state.style);
   }
   function syncSeg(seg, val) {
     const btns = [...seg.querySelectorAll('button')];
@@ -189,12 +188,12 @@
     tools.innerHTML = `<button class="chip-btn ${state.labels ? 'on' : ''}" id="labelsBtn" aria-pressed="${state.labels}">${I.label} Labels</button>` +
       (state.owner ? `<button class="chip-btn ${state.moving ? 'on' : ''}" id="moveBtn">${I.move} ${state.moving ? 'Done moving' : 'Move hotspots'}</button>
         <button class="chip-btn" id="bgBtn">${I.photo} ${bg ? 'Change image' : 'Use my own image'}</button>
-        ${bg ? '<button class="chip-btn" id="bgReset">Restore drawing</button>' : ''}` : '');
+        ${bg ? '<button class="chip-btn" id="bgReset">Restore default image</button>' : ''}` : '');
     $('#labelsBtn').onclick = () => { state.labels = !state.labels; savePrefs({ labels: state.labels }); renderExplorer(); };
     if (state.owner) {
       $('#moveBtn').onclick = () => { state.moving = !state.moving; if (state.moving) toast('Drag the dots to line them up. Changes save automatically.'); renderExplorer(); };
       $('#bgBtn').onclick = () => pickFile('image/*', false, (files) => setBackground(files[0]));
-      const r = $('#bgReset'); if (r) r.onclick = async () => { if (await confirmBox('Restore the drawing?', 'Your uploaded image for this view will be removed. Hotspot positions you set are kept.', 'Restore')) { await store.del(bgKey(state.type, state.style)); renderExplorer(); renderHome(); } };
+      const r = $('#bgReset'); if (r) r.onclick = async () => { if (await confirmBox('Restore the default image?', 'Your uploaded image for this view will be removed. Hotspot positions you set are kept.', 'Restore')) { await store.del(bgKey(state.type, state.style)); renderExplorer(); renderHome(); } };
     }
 
     const art = $('#art');
@@ -220,6 +219,7 @@
     // chips
     $('#chips').innerHTML = currentParts().map((p) => `<button data-part="${p.id}">${esc(part(p.id).name)}</button>`).join('');
     fitStage();
+    setupZoom();
     markActive();
     if (intro && !scene) intro = false;
     if (intro) {
@@ -239,6 +239,29 @@
     if (w / h > ar) w = h * ar; else h = w / ar;
     stage.style.width = Math.floor(w) + 'px'; stage.style.height = Math.floor(h) + 'px';
   }
+
+  /* pinch / wheel zoom on the chimney (Panzoom, MIT) */
+  let pz = null, downAt = null;
+  function setupZoom() {
+    const el = $('#zoomer');
+    if (!window.Panzoom || !el) return;
+    if (!pz) {
+      pz = Panzoom(el, { maxScale: 5, minScale: 1, contain: 'outside', excludeClass: 'hs', cursor: 'grab', step: 0.35 });
+      $('#stage').addEventListener('wheel', (e) => { if (!state.moving) pz.zoomWithWheel(e); }, { passive: false });
+      el.addEventListener('panzoomchange', (e) => {
+        const z = e.detail.scale; $('#stage').style.setProperty('--inv', String(1 / z));
+        $('#zoomReset').hidden = z <= 1.01;
+      });
+      $('#zoomIn').onclick = () => pz.zoomIn();
+      $('#zoomOut').onclick = () => pz.zoomOut();
+      $('#zoomReset').onclick = () => pz.reset();
+      $('#stage').addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; }, true);
+    }
+    pz.reset({ animate: false });
+    pz.setOptions({ disablePan: state.moving, disableZoom: state.moving });
+    $('#zoomCtl').hidden = state.moving;
+  }
+  function wasDrag(e) { return downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 8; }
 
   function markActive() {
     document.querySelectorAll('#stage [data-part], #chips [data-part]').forEach((el) => el.classList.toggle('on', el.dataset.part === state.part));
@@ -265,7 +288,7 @@
   function onHsDown(e) {
     const b = e.target.closest('.hs'); if (!b || !state.moving) return;
     e.preventDefault(); b.setPointerCapture(e.pointerId);
-    drag = { b, id: b.dataset.part, rect: $('#stage').getBoundingClientRect() };
+    drag = { b, id: b.dataset.part, rect: $('#zoomer').getBoundingClientRect() };
   }
   function onHsMove(e) {
     if (!drag) return;
@@ -375,7 +398,7 @@
       h += '<div class="pairs">' + pairs.map(([b, a]) => {
         const cap = [b.caption, a.caption].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(' · ');
         if (mode === 'slider' && b.kind === 'image' && a.kind === 'image') {
-          return `<div class="pair"><div class="ba" style="--pos:50%"><img src="${mediaURL(a)}" alt="After"><img class="b" src="${mediaURL(b)}" alt="Before"><span class="tag">Before</span><span class="tag after">After</span><span class="bar"></span><span class="knob">${I.lr}</span><input type="range" min="0" max="100" value="50" aria-label="Compare before and after"></div>${cap ? `<div class="caption">${esc(cap)}</div>` : ''}</div>`;
+          return `<div class="pair"><div class="ba"><img-comparison-slider class="cmp" tabindex="0"><img slot="first" src="${mediaURL(b)}" alt="Before"><img slot="second" src="${mediaURL(a)}" alt="After"><span slot="handle" class="knob">${I.lr}</span></img-comparison-slider><span class="tag">Before</span><span class="tag after">After</span></div>${cap ? `<div class="caption">${esc(cap)}</div>` : ''}</div>`;
         }
         return `<div class="pair"><div class="cols">${mediaTile(b)}${mediaTile(a)}</div>${cap ? `<div class="caption">${esc(cap)}</div>` : ''}</div>`;
       }).join('') + '</div>';
@@ -403,7 +426,6 @@
     const g = $('#gallery'); if (!g) return;
     const seg = $('#galSeg');
     if (seg) { syncSeg(seg, state.galMode); seg.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; state.galMode = b.dataset.v; savePrefs({ galMode: state.galMode }); refreshGallery(); }; }
-    g.querySelectorAll('.ba input').forEach((inp) => { inp.oninput = () => inp.parentElement.style.setProperty('--pos', inp.value + '%'); });
     g.querySelectorAll('[data-open]').forEach((b) => b.onclick = () => openLightbox(+b.dataset.open));
     if (!state.owner) return;
     g.querySelectorAll('[data-labelseg]').forEach((sg) => {
@@ -469,16 +491,33 @@
   }
 
   /* lightbox */
-  let lbIndex = 0;
-  function openLightbox(id) { lbIndex = state.media.findIndex((m) => m.id === id); if (lbIndex < 0) return; renderLightbox(); $('#lightbox').classList.add('show'); }
-  function renderLightbox() {
-    const m = state.media[lbIndex]; const u = mediaURL(m); const many = state.media.length > 1;
-    $('#lightbox').innerHTML = `<div class="lb-top"><span class="tag" style="position:static" > ${tagText(m.label)} · ${lbIndex + 1} of ${state.media.length}</span><button class="icon-btn" id="lbClose" aria-label="Close">${I.close}</button></div>
-      <div class="lb-main">${m.kind === 'video' ? `<video src="${u}" controls autoplay playsinline></video>` : `<img src="${u}" alt="${esc(m.caption || '')}">`}
-      ${many ? `<button class="icon-btn nav prev" id="lbPrev" aria-label="Previous">${I.left}</button><button class="icon-btn nav next" id="lbNext" aria-label="Next">${I.right}</button>` : ''}</div>
-      <div class="lb-cap">${esc(m.caption || '')}</div>`;
-    $('#lbClose').onclick = closeLightbox;
-    if (many) { $('#lbPrev').onclick = () => { lbIndex = (lbIndex - 1 + state.media.length) % state.media.length; renderLightbox(); }; $('#lbNext').onclick = () => { lbIndex = (lbIndex + 1) % state.media.length; renderLightbox(); }; }
+  /* full-screen viewer with swipe and pinch zoom (PhotoSwipe, MIT) */
+  const dimCache = new Map();
+  function dims(m) {
+    if (dimCache.has(m.id)) return Promise.resolve(dimCache.get(m.id));
+    return new Promise((res) => {
+      const done = (w, h) => { const d = { w: w || 1600, h: h || 1200 }; dimCache.set(m.id, d); res(d); };
+      if (m.kind === 'video') { const v = document.createElement('video'); v.preload = 'metadata'; v.onloadedmetadata = () => done(v.videoWidth, v.videoHeight); v.onerror = () => done(); v.src = mediaURL(m); }
+      else { const im = new Image(); im.onload = () => done(im.naturalWidth, im.naturalHeight); im.onerror = () => done(); im.src = mediaURL(m); }
+    });
+  }
+  async function openLightbox(id) {
+    const list = state.media; const index = list.findIndex((m) => m.id === id); if (index < 0 || !window.PhotoSwipe) return;
+    const ds = await Promise.all(list.map(async (m) => {
+      const d = await dims(m);
+      if (m.kind === 'video') return { html: `<div class="pswp-video"><video src="${mediaURL(m)}" controls playsinline></video></div>`, m };
+      return { src: mediaURL(m), width: d.w, height: d.h, alt: m.caption || '', m };
+    }));
+    const pswp = new PhotoSwipe({ dataSource: ds, index, bgOpacity: 0.94, showHideAnimationType: 'fade', wheelToZoom: true, padding: { top: 56, bottom: 72, left: 0, right: 0 } });
+    pswp.on('uiRegister', () => {
+      pswp.ui.registerElement({ name: 'cx-caption', order: 9, isButton: false, appendTo: 'root', onInit: (el) => {
+        el.className = 'pswp-cx-caption';
+        const upd = () => { const m = (pswp.currSlide ? pswp.currSlide.data : ds[pswp.currIndex || index]).m; el.innerHTML = `<span class="tag ${m.label}">${tagText(m.label)}</span>${m.caption ? `<span>${esc(m.caption)}</span>` : ''}`; };
+        pswp.on('change', upd); upd();
+      } });
+    });
+    pswp.on('change', () => document.querySelectorAll('.pswp video').forEach((v) => v.pause()));
+    pswp.init();
   }
   function closeLightbox() { const lb = $('#lightbox'); lb.classList.remove('show'); setTimeout(() => { if (!lb.classList.contains('show')) lb.innerHTML = ''; }, 300); }
 
@@ -658,7 +697,7 @@
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* optional */ }
     await importSeed();
     const p = prefs();
-    if (p.style) state.style = p.style; if (p.labels === false) state.labels = false; if (p.galMode) state.galMode = p.galMode;
+    if (p.labels === false) state.labels = false; if (p.galMode) state.galMode = p.galMode;
 
     $('#brand').insertAdjacentHTML('afterbegin', I.flame);
     $('#backBtn').innerHTML = I.left + '<span>Types</span>';
@@ -667,14 +706,9 @@
     $('#ownerSettings').innerHTML = I.gear + ' Settings';
     $('#ownerSettings').onclick = openSettings;
     $('#ownerDone').onclick = () => setOwner(false);
-    $('#styleSeg').onclick = (e) => {
-      const b = e.target.closest('button'); if (!b || b.dataset.v === state.style) return;
-      state.style = b.dataset.v; savePrefs({ style: state.style }); renderTop(); renderHome();
-      if (state.screen === 'explorer') { renderExplorer(); }
-    };
     $('#scrim').onclick = closePart;
     // stage & chips interactions (delegated)
-    $('#stage').addEventListener('click', (e) => { const t = e.target.closest('[data-part]'); if (t && !state.moving) openPart(t.dataset.part); });
+    $('#stage').addEventListener('click', (e) => { if (wasDrag(e)) return; const t = e.target.closest('[data-part]'); if (t && !state.moving) openPart(t.dataset.part); });
     $('#chips').addEventListener('click', (e) => { const t = e.target.closest('[data-part]'); if (t) { if (state.moving) { state.moving = false; renderExplorer(); } openPart(t.dataset.part); } });
     $('#hotspots').addEventListener('pointerdown', onHsDown);
     $('#hotspots').addEventListener('pointermove', onHsMove);
@@ -682,6 +716,7 @@
     $('#hotspots').addEventListener('pointercancel', onHsUp);
     bindSheetDrag();
     document.addEventListener('keydown', (e) => {
+      if (document.querySelector('.pswp')) return;
       if (e.key === 'Escape') { if ($('#lightbox').classList.contains('show')) closeLightbox(); else if ($('#modal').classList.contains('show')) closeModal(); else if (state.part) closePart(); else if (state.screen === 'explorer') go('home'); }
       if (state.part && !$('#modal').classList.contains('show') && !$('#lightbox').classList.contains('show') && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
         if (e.key === 'ArrowRight') $('#nextPart').click(); if (e.key === 'ArrowLeft') $('#prevPart').click();
