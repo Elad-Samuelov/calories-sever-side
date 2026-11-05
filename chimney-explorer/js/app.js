@@ -522,7 +522,7 @@
     });
   }
   const blobToData = (b) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
-  const dataToBlob = async (d) => (await fetch(d)).blob();
+  const dataToBlob = async (d) => dataURLToBlob(d);
   async function exportBackup() {
     try {
       toast('Preparing backup…');
@@ -595,6 +595,29 @@
     grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
   }
 
+  /* Built-in examples (js/seed.js) are copied into storage once, then behave like
+     the owner's own uploads: editable, reorderable, deletable. Deleted ones stay deleted. */
+  function dataURLToBlob(d) {
+    const i = d.indexOf(','); const mime = d.slice(5, d.indexOf(';')); const bin = atob(d.slice(i + 1));
+    const u8 = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k);
+    return new Blob([u8], { type: mime });
+  }
+  async function importSeed() {
+    const seed = window.CX_SEED || []; if (!seed.length) return;
+    const done = new Set(cache.get('seeded') || []);
+    const todo = seed.filter((s) => !done.has(s.id)); if (!todo.length) return;
+    const counts = {};
+    for (const m of await store.allMedia()) counts[m.part] = (counts[m.part] || 0) + 1;
+    for (const s of todo) {
+      try {
+        const blob = dataURLToBlob(s.data);
+        await store.putMedia({ part: s.part, label: s.label, caption: s.caption, kind: s.kind, mime: blob.type, blob, order: (counts[s.part] = (counts[s.part] || 0) + 1) - 1, created: Date.now(), seed: s.id });
+        done.add(s.id);
+      } catch (e) { /* skip; retried next launch */ }
+    }
+    await store.set('seeded', [...done]);
+  }
+
   /* ================= boot ================= */
   async function boot() {
     const ok = await openDB();
@@ -602,6 +625,7 @@
     for (const [k, v] of cache) if (k.startsWith('bg:') && v && v.blob) v.url = URL.createObjectURL(v.blob);
     if (!ok) setTimeout(() => toast('Storage is unavailable here, so uploads will not be kept.'), 800);
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* optional */ }
+    await importSeed();
     const p = prefs();
     if (p.style) state.style = p.style; if (p.labels === false) state.labels = false; if (p.galMode) state.galMode = p.galMode;
 

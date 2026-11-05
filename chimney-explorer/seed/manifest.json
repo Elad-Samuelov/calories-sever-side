@@ -1,0 +1,20 @@
+[
+  {"id":"cap-white-b","part":"cap","label":"before","src":"f83f2477-image.jpg","crop":"left","caption":"Painted brick chimney with no cap and a worn crown"},
+  {"id":"cap-white-a","part":"cap","label":"after","src":"f83f2477-image.jpg","crop":"right","caption":"New black cap installed and the chimney repainted"},
+  {"id":"cap-chase-b","part":"cap","label":"before","src":"f4803bfb-image.jpg","crop":"left","caption":"Siding chase with a plain round termination cap"},
+  {"id":"cap-chase-a","part":"cap","label":"after","src":"f4803bfb-image.jpg","crop":"right","caption":"Custom shroud painted to match the siding"},
+  {"id":"cap-cover","part":"cap","label":"after","src":"e481e299-image.jpg","caption":"Custom chase cover and cap with screened sides"},
+  {"id":"cap-stucco","part":"cap","label":"after","src":"ef546896-image.jpg","caption":"New black cap on a stucco chimney"},
+  {"id":"cap-video","part":"cap","label":"after","src":"cap-chase-install.mp4","video":true,"caption":"Installing a custom chase cap (video)"},
+  {"id":"crown-paint-b","part":"crown","label":"before","src":"82a30279-image.jpg","crop":"left","caption":"Peeling paint, cracked crown and old flashing"},
+  {"id":"crown-paint-a","part":"crown","label":"after","src":"82a30279-image.jpg","crop":"right","caption":"New crown, stainless cap and cleaned brick"},
+  {"id":"crown-brick","part":"crown","label":"after","src":"067cf70b-image.jpg","caption":"Freshly formed mortar crown around the clay flue"},
+  {"id":"crown-stone","part":"crown","label":"after","src":"43adb628-image.jpg","caption":"New crown on a stone chimney"},
+  {"id":"flash-b","part":"flashing","label":"before","src":"ae3d7e8b-image.jpg","caption":"Old, patched step flashing where the roof meets the brick"},
+  {"id":"flash-a","part":"flashing","label":"after","src":"ae0b77a7-image.jpg","caption":"New cricket and flashing steer water around the chimney"},
+  {"id":"brick-b","part":"brick","label":"before","src":"2e10dbfa-image.jpg","caption":"During tuckpointing: fresh mortar packed into worn joints"},
+  {"id":"brick-a","part":"brick","label":"after","src":"391527e0-image.jpg","caption":"Repointed chimney above the roofline"},
+  {"id":"firebox-b","part":"firebox","label":"before","src":"103eb36b-image.jpg","caption":"Sooty firebox with eroded joints being patched"},
+  {"id":"firebox-a","part":"firebox","label":"after","src":"a7d32810-image.jpg","caption":"Firebox after cleaning and refractory mortar repair"},
+  {"id":"liner-chase","part":"liner","label":"after","src":"2843ac92-image.jpg","caption":"Chase rebuild: new stainless liner, framing, house wrap and siding"}
+]

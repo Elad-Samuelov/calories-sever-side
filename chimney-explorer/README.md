@@ -31,7 +31,7 @@ For use on site, drag the `chimney-explorer` folder onto [Netlify Drop](https://
 4. **Settings** has the business name, phone number ("Call" button on every part), home text, owner PIN, and **Download backup** / **Restore from backup**.
 5. Tap **Done** to return to the clean client view.
 
-Uploads are stored on the device you upload them on. Use the backup file to copy everything to another device, and keep a copy safe.
+Your real job photos are built in (see `seed/`) and load on every new device. Uploads you add later are stored on the device you upload them on. Use the backup file to copy everything to another device, and keep a copy safe.
 
 ## Files
 
@@ -44,3 +44,14 @@ Uploads are stored on the device you upload them on. Use the backup file to copy
 | `js/app.js` | App logic, storage, galleries, owner mode |
 | `sw.js`, `manifest.webmanifest`, `icon-*.png` | Offline support and home-screen icon |
 | `build.js` | `node build.js` bundles everything into `dist/chimney-explorer.html` |
+
+## Built-in job photos
+
+`seed/manifest.json` lists the built-in Before/After photos: which part each belongs to, Before or After, and the caption. Originals are in `seed/photos/`. Side-by-side composites are split into separate Before and After images with `"crop": "left"` or `"right"`. After changing the list, run:
+
+```bash
+python3 tools/build-seed.py   # rebuilds js/seed.js (needs Python + Pillow)
+node build.js                 # rebuilds dist/chimney-explorer.html
+```
+
+Built-in photos are copied into the app's storage the first time it opens on a device. After that the owner can edit, reorder or delete them like any upload.
