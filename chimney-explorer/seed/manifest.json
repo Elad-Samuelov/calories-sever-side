@@ -65,6 +65,32 @@
   "caption": "Black shroud with bird spikes"
  },
  {
+  "id": "shroud-tan-b",
+  "part": "shroud",
+  "label": "before",
+  "src": "3a7df7cd-image.jpg",
+  "crop": [
+   0.005,
+   0,
+   0.495,
+   1
+  ],
+  "caption": "Plain round termination cap"
+ },
+ {
+  "id": "shroud-tan-a",
+  "part": "shroud",
+  "label": "after",
+  "src": "3a7df7cd-image.jpg",
+  "crop": [
+   0.505,
+   0,
+   0.995,
+   1
+  ],
+  "caption": "Black shroud with a screened band"
+ },
+ {
   "id": "shroud-stucco",
   "part": "shroud",
   "label": "during",
@@ -78,6 +104,39 @@
   "src": "cap-chase-install.mp4",
   "video": true,
   "caption": "Installing a custom chase cap (video)"
+ },
+ {
+  "id": "shroud-grey",
+  "part": "shroud",
+  "label": "after",
+  "src": "d10347c4-image.jpg",
+  "caption": "Custom shroud in a color matched to the house"
+ },
+ {
+  "id": "cover-rust-b",
+  "part": "chasecover",
+  "label": "before",
+  "src": "a8ac1c8b-image.jpg",
+  "crop": [
+   0.005,
+   0.25,
+   0.495,
+   0.71
+  ],
+  "caption": "Rusted chase cover and an open box cap"
+ },
+ {
+  "id": "cover-rust-a",
+  "part": "chasecover",
+  "label": "after",
+  "src": "a8ac1c8b-image.jpg",
+  "crop": [
+   0.505,
+   0,
+   0.995,
+   1
+  ],
+  "caption": "New cover and shroud, chase re-sided and painted"
  },
  {
   "id": "cap-cover",
@@ -217,6 +276,32 @@
   "caption": "Firebox after cleaning and refractory mortar repair"
  },
  {
+  "id": "fb-gas-b",
+  "part": "firebox",
+  "label": "before",
+  "src": "3e9f8892-image.jpg",
+  "crop": [
+   0.005,
+   0,
+   0.495,
+   1
+  ],
+  "caption": "Sooty, patched firebox"
+ },
+ {
+  "id": "fb-gas-a",
+  "part": "firebox",
+  "label": "after",
+  "src": "3e9f8892-image.jpg",
+  "crop": [
+   0.505,
+   0,
+   0.995,
+   1
+  ],
+  "caption": "Cleaned firebox with a new gas log set"
+ },
+ {
   "id": "chase-rot-b",
   "part": "chase",
   "label": "before",
@@ -253,12 +338,71 @@
   "caption": "New siding and a black shroud"
  },
  {
+  "id": "chase-vert-b",
+  "part": "chase",
+  "label": "before",
+  "src": "c752647e-image.jpg",
+  "crop": [
+   0.005,
+   0,
+   0.495,
+   1
+  ],
+  "caption": "Split, weathered siding pulling away at the corners"
+ },
+ {
+  "id": "chase-vert-a",
+  "part": "chase",
+  "label": "after",
+  "src": "c752647e-image.jpg",
+  "crop": [
+   0.505,
+   0,
+   0.995,
+   1
+  ],
+  "caption": "New siding, trim and paint"
+ },
+ {
+  "id": "chase-osb-b",
+  "part": "chase",
+  "label": "before",
+  "src": "50021f3d-image.jpg",
+  "crop": [
+   0.005,
+   0,
+   0.495,
+   1
+  ],
+  "caption": "Siding torn off, bare sheathing exposed to rain"
+ },
+ {
+  "id": "chase-osb-a",
+  "part": "chase",
+  "label": "after",
+  "src": "50021f3d-image.jpg",
+  "crop": [
+   0.505,
+   0,
+   0.995,
+   1
+  ],
+  "caption": "Fully re-sided chase in a dark finish"
+ },
+ {
   "id": "chase-brick-b",
   "part": "chase",
   "label": "before",
   "src": "92aad5f4-image.jpg",
   "crop": "left",
   "caption": "Brick chimney before the upper section was rebuilt"
+ },
+ {
+  "id": "chase-bird-b",
+  "part": "chase",
+  "label": "before",
+  "src": "e6a99c25-image.jpg",
+  "caption": "Rotting siding and trim, open gaps at the corners"
  },
  {
   "id": "chase-d1",
@@ -288,5 +432,38 @@
   "src": "92aad5f4-image.jpg",
   "crop": "right",
   "caption": "Upper section rebuilt and wrapped, ready for finish"
+ },
+ {
+  "id": "chase-frame-d",
+  "part": "chase",
+  "label": "during",
+  "src": "fb7d5b12-image.jpg",
+  "caption": "Chase opened up: rotted framing removed around the pipe"
+ },
+ {
+  "id": "mantel-stucco-b",
+  "part": "mantel",
+  "label": "before",
+  "src": "8b059a01-image.jpg",
+  "crop": [
+   0.005,
+   0.27,
+   0.495,
+   0.73
+  ],
+  "caption": "Dated stone fireplace wall"
+ },
+ {
+  "id": "mantel-stucco-a",
+  "part": "mantel",
+  "label": "after",
+  "src": "8b059a01-image.jpg",
+  "crop": [
+   0.506,
+   0.27,
+   0.995,
+   0.73
+  ],
+  "caption": "Refaced in smooth plaster with a new raised hearth"
  }
 ]
