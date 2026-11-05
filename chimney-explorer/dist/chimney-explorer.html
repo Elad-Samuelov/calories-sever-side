@@ -1,0 +1,1752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chimney Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#fbfaf8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chimney Explorer">
+<meta name="description" content="An interactive chimney and fireplace guide for explaining parts and repairs to clients.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23e8622c'/%3E%3Cpath d='M16 6c1 4 6 6.5 6 12a6 6 0 0 1-12 0c0-3 1.6-4.6 2.8-6 .2 2 1 3 2.2 3.4C14.6 12.5 15.2 9 16 6z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+/* Layout: one calm canvas. The chimney is the hero; everything else steps back. */
+:root {
+  --ember: #e8622c;
+  --ember-deep: #c94c1a;
+  --ember-soft: #fdf0e9;
+  --ink: #1d1d1f;
+  --ink-2: #6e6e73;
+  --ink-3: #a1a1a6;
+  --line: #e7e5e2;
+  --bg: #fbfaf8;
+  --card: #ffffff;
+  --scrim: rgba(20, 16, 14, .32);
+  --shadow: 0 1px 2px rgba(30, 20, 10, .05), 0 8px 30px rgba(30, 20, 10, .08);
+  --shadow-lg: 0 20px 60px rgba(30, 20, 10, .18);
+  --r: 20px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+  --ease: cubic-bezier(.32, .72, 0, 1);
+  --top: 60px;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0; font-family: var(--font); background: var(--bg); color: var(--ink);
+  -webkit-font-smoothing: antialiased; font-size: 16px; line-height: 1.5; overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; border-radius: 8px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: fixed; inset: 0 0 auto; z-index: 30; height: calc(var(--top) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(251, 250, 248, .82); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, .05);
+}
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 600; letter-spacing: -.01em; min-width: 0; font-size: 17px; }
+.brand svg { flex: none; }
+.brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spacer { flex: 1; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); transition: background .2s; flex: none; }
+.icon-btn:hover { background: rgba(0, 0, 0, .05); }
+.icon-btn.on { background: var(--ember-soft); color: var(--ember-deep); }
+.back { display: flex; align-items: center; gap: 2px; height: 40px; padding: 0 10px 0 4px; border-radius: 20px; color: var(--ember-deep); font-weight: 500; flex: none; }
+.back:hover { background: var(--ember-soft); }
+
+.seg { display: inline-flex; background: rgba(0, 0, 0, .055); border-radius: 999px; padding: 3px; position: relative; flex: none; }
+.seg button { position: relative; z-index: 1; height: 32px; padding: 0 14px; border-radius: 999px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); transition: color .25s; white-space: nowrap; }
+.seg button[aria-pressed="true"] { color: var(--ink); }
+.seg .pill { position: absolute; top: 3px; bottom: 3px; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); transition: left .35s var(--ease), width .35s var(--ease); }
+.seg.sm button { height: 28px; padding: 0 12px; font-size: 13px; }
+
+.owner-bar {
+  position: fixed; z-index: 29; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; border-radius: 999px;
+  background: var(--ink); color: #fff; font-size: 13px; box-shadow: var(--shadow-lg); white-space: nowrap; max-width: calc(100vw - 24px);
+}
+.owner-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ember); flex: none; }
+.owner-bar .txt { overflow: hidden; text-overflow: ellipsis; }
+.owner-bar button { height: 30px; padding: 0 12px; border-radius: 999px; background: rgba(255, 255, 255, .14); font-size: 13px; font-weight: 500; flex: none; }
+.owner-bar button:hover { background: rgba(255, 255, 255, .24); }
+
+/* ---------- screens ---------- */
+.screen { position: fixed; inset: calc(var(--top) + env(safe-area-inset-top, 0px)) 0 0; overflow: auto; transition: opacity .4s var(--ease), transform .5s var(--ease); }
+.screen[aria-hidden="true"] { opacity: 0; pointer-events: none; transform: scale(.985); }
+
+/* home */
+.home { padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.home-inner { max-width: 1100px; margin: 0 auto; padding-top: clamp(28px, 7vh, 80px); }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ember-deep); font-weight: 600; }
+.home h1 { font-size: clamp(32px, 5.6vw, 58px); line-height: 1.04; letter-spacing: -.035em; font-weight: 700; margin-top: 10px; max-width: 14ch; }
+.home .sub { font-size: clamp(17px, 2vw, 21px); color: var(--ink-2); margin: 14px 0 0; max-width: 40ch; letter-spacing: -.01em; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: clamp(28px, 5vh, 56px); }
+.card {
+  text-align: left; background: var(--card); border-radius: 26px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column;
+  transition: transform .45s var(--ease), box-shadow .45s var(--ease); animation: rise .7s var(--ease) both;
+}
+.card:nth-child(2) { animation-delay: .06s; } .card:nth-child(3) { animation-delay: .12s; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 2px 4px rgba(30, 20, 10, .05), 0 22px 50px rgba(30, 20, 10, .14); }
+.card:active { transform: scale(.985); }
+.card .thumb { height: 250px; background: #f3efea; position: relative; overflow: hidden; }
+.card .thumb svg, .card .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.card .body { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.card h2 { font-size: 22px; letter-spacing: -.02em; font-weight: 650; }
+.card p { margin: 0; color: var(--ink-2); font-size: 15px; line-height: 1.45; }
+.card .go { margin-top: auto; padding-top: 12px; color: var(--ember-deep); font-weight: 500; font-size: 15px; display: flex; align-items: center; gap: 4px; }
+.home-foot { margin-top: 36px; color: var(--ink-3); font-size: 13px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* explorer */
+.explorer { display: flex; flex-direction: column; overflow: hidden; }
+.ex-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); transition: padding .5s var(--ease); }
+.ex-head h1 { font-size: clamp(22px, 3.2vw, 30px); letter-spacing: -.025em; font-weight: 700; line-height: 1.1; margin-top: 4px; }
+.ex-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip-btn { height: 34px; padding: 0 14px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1px var(--line); font-size: 13.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; color: var(--ink); white-space: nowrap; }
+.chip-btn:hover { box-shadow: inset 0 0 0 1px #d3d0cc; }
+.chip-btn.on { background: var(--ember-soft); box-shadow: inset 0 0 0 1px #f6c9b2; color: var(--ember-deep); }
+.chip-btn.dark { background: var(--ink); color: #fff; box-shadow: none; }
+.stage-wrap { flex: 1; min-height: 0; position: relative; display: grid; place-items: center; transition: padding .5s var(--ease); }
+.stage { position: relative; border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); background: #fff; touch-action: manipulation; animation: rise .6s var(--ease) both; }
+.stage > .art, .stage > .art svg, .stage > .art img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage > .art img { object-fit: cover; }
+.stage .hit { fill: transparent; stroke: transparent; cursor: pointer; transition: fill .3s, stroke .3s; vector-effect: non-scaling-stroke; }
+.stage .hit:hover { fill: rgba(232, 98, 44, .12); stroke: rgba(232, 98, 44, .7); stroke-width: 1.5; }
+.stage .hit.on { fill: rgba(232, 98, 44, .2); stroke: var(--ember); stroke-width: 2.5; }
+.stage .hit.intro { animation: introHit 1.1s ease both; }
+@keyframes introHit { 0%, 100% { fill: transparent; stroke: transparent; } 40% { fill: rgba(232, 98, 44, .16); stroke: rgba(232, 98, 44, .8); stroke-width: 1.5; } }
+.stage.moving .hit { pointer-events: none; }
+
+.hs { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; z-index: 2; }
+.hs .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 0 3px #fff, 0 2px 8px rgba(0, 0, 0, .35); position: relative; transition: transform .3s var(--ease); }
+.hs .dot::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid rgba(232, 98, 44, .8); animation: pulse 2.6s ease-out infinite; }
+.hs:hover .dot, .hs.on .dot { transform: scale(1.25); }
+.hs.on .dot { background: #fff; box-shadow: 0 0 0 4px var(--ember), 0 2px 10px rgba(0, 0, 0, .35); }
+.hs .lbl {
+  position: absolute; top: 50%; transform: translateY(-50%); white-space: nowrap; pointer-events: none;
+  background: rgba(255, 255, 255, .94); color: var(--ink); font-size: 12.5px; font-weight: 600; letter-spacing: -.005em;
+  padding: 5px 10px; border-radius: 999px; box-shadow: 0 2px 10px rgba(0, 0, 0, .16); transition: opacity .3s, transform .3s var(--ease);
+}
+.hs .lbl.r { left: 38px; } .hs .lbl.l { right: 38px; }
+.stage.no-labels .hs .lbl { opacity: 0; transform: translateY(-50%) scale(.95); }
+.stage.no-labels .hs:hover .lbl, .stage.no-labels .hs.on .lbl { opacity: 1; transform: translateY(-50%); }
+.hs.on .lbl { background: var(--ember); color: #fff; }
+.stage.moving .hs { cursor: grab; touch-action: none; }
+.stage.moving .hs .dot { background: #fff; box-shadow: 0 0 0 3px var(--ember), 0 2px 8px rgba(0, 0, 0, .35); }
+.stage.moving .hs .dot::after { animation: none; border-style: dashed; inset: -9px; }
+@keyframes pulse { 0% { transform: scale(1); opacity: .9; } 80%, 100% { transform: scale(2.4); opacity: 0; } }
+
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); flex: none; transition: padding .5s var(--ease); }
+.chips::-webkit-scrollbar { display: none; }
+.chips button { flex: none; height: 40px; padding: 0 16px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1px var(--line); font-size: 14px; font-weight: 500; transition: background .25s, color .25s, box-shadow .25s; }
+.chips button:hover { box-shadow: inset 0 0 0 1px #d3d0cc; }
+.chips button.on { background: var(--ink); color: #fff; box-shadow: none; }
+
+/* flame flicker */
+.fl { transform-box: fill-box; transform-origin: 50% 100%; animation: flick 1.6s ease-in-out infinite alternate; }
+.fl1 { animation-duration: 1.2s; } .fl2 { animation-duration: 1.9s; animation-delay: -.4s; } .fl3 { animation-duration: 1.4s; animation-delay: -.8s; }
+.glow { animation: glow 2.4s ease-in-out infinite alternate; }
+.smoke { animation: drift 5s ease-in-out infinite alternate; }
+.smoke-dash { animation: dash 1.6s linear infinite; }
+@keyframes flick { 0% { transform: scale(1, 1) skewX(0); } 50% { transform: scale(.94, 1.08) skewX(2deg); } 100% { transform: scale(1.04, .92) skewX(-2deg); } }
+@keyframes glow { from { opacity: .75; } to { opacity: 1; } }
+@keyframes drift { from { transform: translateX(-3px); opacity: .7; } to { transform: translateX(3px); opacity: 1; } }
+@keyframes dash { to { stroke-dashoffset: -22; } }
+
+/* ---------- sheet / panel ---------- */
+.scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity .45s var(--ease); }
+.scrim.show { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 88vh; max-height: 88dvh; background: var(--card);
+  border-radius: 26px 26px 0 0; box-shadow: var(--shadow-lg); transform: translateY(105%); transition: transform .5s var(--ease);
+  display: flex; flex-direction: column; overscroll-behavior: contain;
+}
+.sheet.show { transform: none; }
+.sheet .grip { flex: none; height: 26px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.sheet .grip::before { content: ""; width: 38px; height: 5px; border-radius: 3px; background: #d8d5d1; }
+.sheet .scroll { overflow-y: auto; padding: 0 max(22px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(22px, env(safe-area-inset-left, 0px)); -webkit-overflow-scrolling: touch; }
+.sheet .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; background: var(--card); padding: 4px 0 10px; z-index: 2; }
+.sheet .close { width: 34px; height: 34px; border-radius: 50%; background: rgba(0, 0, 0, .06); display: grid; place-items: center; flex: none; }
+.sheet .close:hover { background: rgba(0, 0, 0, .1); }
+.sheet h2 { font-size: clamp(28px, 4vw, 36px); letter-spacing: -.03em; font-weight: 700; line-height: 1.08; }
+.sheet .tagline { font-size: 18px; color: var(--ink-2); margin: 6px 0 0; letter-spacing: -.01em; }
+.sec { margin-top: 28px; }
+.sec h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); font-weight: 600; margin-bottom: 10px; }
+.sec p { margin: 0 0 12px; font-size: 16.5px; line-height: 1.6; color: #2c2c2e; max-width: 62ch; }
+.problems { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.problems li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f0eeeb; font-size: 16px; line-height: 1.45; }
+.problems li:last-child { border-bottom: 0; }
+.problems li::before { content: ""; flex: none; width: 7px; height: 7px; margin-top: 8px; border-radius: 50%; background: var(--ember); }
+.service { background: var(--ember-soft); border-radius: 20px; padding: 20px 22px 10px; }
+.service h3 { color: var(--ember-deep); }
+.service p { color: #3b2a22; }
+.cta { display: inline-flex; align-items: center; gap: 8px; margin: 2px 0 12px; height: 44px; padding: 0 18px; border-radius: 999px; background: var(--ember); color: #fff; font-weight: 600; text-decoration: none; font-size: 15px; }
+.cta:hover { background: var(--ember-deep); }
+.sheet-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sheet-nav button { height: 44px; padding: 0 16px; border-radius: 999px; font-weight: 500; color: var(--ink); display: inline-flex; align-items: center; gap: 4px; background: rgba(0, 0, 0, .045); min-width: 0; }
+.sheet-nav button:hover { background: rgba(0, 0, 0, .08); }
+.sheet-nav button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.owner-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+/* ---------- gallery ---------- */
+.gal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.gal-head h3 { margin: 0; }
+.empty { border: 1.5px dashed #e2ddd7; border-radius: 20px; padding: 30px 20px; text-align: center; color: var(--ink-2); display: grid; justify-items: center; gap: 6px; }
+.empty .ic { width: 46px; height: 46px; border-radius: 50%; background: #f5f2ee; display: grid; place-items: center; color: var(--ink-3); margin-bottom: 4px; }
+.empty b { color: var(--ink); font-weight: 600; font-size: 16px; }
+.empty span { font-size: 14px; }
+.pairs { display: grid; gap: 22px; }
+.pair .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.media { position: relative; border-radius: 14px; overflow: hidden; background: #f1eee9; aspect-ratio: 4 / 3; cursor: zoom-in; display: block; width: 100%; }
+.media img, .media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media .tag, .ba .tag { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; background: rgba(0, 0, 0, .55); color: #fff; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.media .tag.after, .ba .tag.after { background: var(--ember); }
+.media .play { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.media .play i { width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 255, 255, .9); display: grid; place-items: center; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
+.caption { font-size: 14px; color: var(--ink-2); margin-top: 8px; line-height: 1.45; }
+.singles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+.ba { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 3; background: #f1eee9; user-select: none; touch-action: pan-y; }
+.ba img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.ba .b { clip-path: inset(0 calc(100% - var(--pos, 50%)) 0 0); }
+.ba .bar { position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 8px rgba(0, 0, 0, .35); pointer-events: none; }
+.ba .knob { position: absolute; top: 50%; left: var(--pos, 50%); width: 42px; height: 42px; margin: -21px 0 0 -21px; border-radius: 50%; background: #fff; box-shadow: 0 3px 12px rgba(0, 0, 0, .3); display: grid; place-items: center; pointer-events: none; color: var(--ink); }
+.ba .tag.after { left: auto; right: 8px; }
+.ba input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+
+/* owner gallery editor */
+.ed-list { display: grid; gap: 12px; }
+.ed-item { display: grid; grid-template-columns: 92px 1fr; gap: 12px; padding: 10px; border-radius: 16px; background: #faf8f6; box-shadow: inset 0 0 0 1px #efebe6; align-items: start; }
+.ed-item .media { aspect-ratio: 1; border-radius: 10px; }
+.ed-item .fields { display: grid; gap: 8px; min-width: 0; }
+.ed-item .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ed-item input[type="text"] { width: 100%; height: 38px; border-radius: 10px; border: 1px solid #e3dfda; padding: 0 12px; background: #fff; font-size: 14.5px; }
+.mini { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: #fff; box-shadow: inset 0 0 0 1px #e6e2dd; color: var(--ink-2); }
+.mini:hover { color: var(--ink); }
+.mini.danger:hover { color: #c62828; box-shadow: inset 0 0 0 1px #f2c4c4; }
+.mini:disabled { opacity: .35; cursor: default; }
+.add-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.add-btn { height: 52px; border-radius: 16px; border: 1.5px dashed #e0c3b3; color: var(--ember-deep); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; background: #fffaf7; }
+.add-btn:hover { background: var(--ember-soft); }
+.hint { font-size: 13px; color: var(--ink-3); margin-top: 10px; }
+
+/* ---------- modal ---------- */
+.modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.modal.show { opacity: 1; pointer-events: auto; }
+.modal .bg { position: absolute; inset: 0; background: var(--scrim); }
+.modal .box { position: relative; width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: #fff; border-radius: 24px; box-shadow: var(--shadow-lg); padding: 24px; transform: translateY(12px) scale(.98); transition: transform .4s var(--ease); }
+.modal.show .box { transform: none; }
+.modal h2 { font-size: 24px; letter-spacing: -.02em; }
+.modal .lead { color: var(--ink-2); margin: 6px 0 0; font-size: 15px; }
+.form { display: grid; gap: 14px; margin-top: 18px; }
+.form label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.form input, .form textarea { width: 100%; border: 1px solid #e3dfda; border-radius: 12px; padding: 11px 13px; font-size: 16px; background: #fff; font-weight: 400; color: var(--ink); line-height: 1.45; }
+.form textarea { min-height: 96px; resize: vertical; }
+.form input:focus, .form textarea:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 3px rgba(232, 98, 44, .15); }
+.form small { font-weight: 400; color: var(--ink-3); }
+.form fieldset { border: 0; padding: 16px 0 0; margin: 4px 0 0; border-top: 1px solid var(--line); display: grid; gap: 12px; }
+.form legend { font-size: 15px; font-weight: 650; color: var(--ink); padding: 0 0 4px; }
+.actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; flex-wrap: wrap; }
+.btn { height: 44px; padding: 0 18px; border-radius: 999px; font-weight: 600; font-size: 15px; background: rgba(0, 0, 0, .06); }
+.btn:hover { background: rgba(0, 0, 0, .1); }
+.btn.primary { background: var(--ember); color: #fff; }
+.btn.primary:hover { background: var(--ember-deep); }
+.btn.danger { color: #c62828; background: #fdecec; }
+.btn.left { margin-right: auto; }
+.pin-input { font-size: 28px !important; letter-spacing: .5em; text-align: center; font-variant-numeric: tabular-nums; }
+.err { color: #c62828; font-size: 14px; min-height: 20px; margin-top: 6px; }
+
+/* ---------- lightbox ---------- */
+.lightbox { position: fixed; inset: 0; z-index: 70; background: rgba(12, 10, 9, .94); display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.lightbox.show { opacity: 1; pointer-events: auto; }
+.lightbox .lb-top { display: flex; justify-content: space-between; align-items: center; padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); color: #fff; }
+.lightbox .lb-main { flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 12px; position: relative; }
+.lightbox img, .lightbox video { max-width: 100%; max-height: 100%; border-radius: 10px; }
+.lightbox .lb-cap { color: #d8d5d1; text-align: center; padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px)); font-size: 15px; }
+.lightbox .icon-btn { color: #fff; background: rgba(255, 255, 255, .12); }
+.lightbox .nav { position: absolute; top: 50%; transform: translateY(-50%); }
+.lightbox .nav.prev { left: 10px; } .lightbox .nav.next { right: 10px; }
+
+.toast { position: fixed; z-index: 80; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 14px; font-weight: 500; transition: all .35s var(--ease); pointer-events: none; box-shadow: var(--shadow-lg); max-width: calc(100vw - 32px); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- responsive ---------- */
+@media (min-width: 900px) {
+  .sheet { left: auto; top: calc(var(--top) + env(safe-area-inset-top, 0px) + 12px); right: 12px; bottom: 12px; width: 440px; max-height: none; border-radius: 26px; transform: translateX(calc(100% + 24px)); }
+  .sheet.show { transform: none; }
+  .sheet .grip { display: none; }
+  .sheet .scroll { padding: 0 28px 28px; height: 100%; border-radius: 26px; }
+  .sheet .top { padding-top: 18px; }
+  .scrim { display: none; }
+  .explorer.panel-open .stage-wrap, .explorer.panel-open .ex-head, .explorer.panel-open .chips { padding-right: 470px; }
+}
+@media (max-width: 899px) {
+  .cards { grid-template-columns: 1fr; }
+  .card { flex-direction: row; min-height: 150px; }
+  .card .thumb { width: 38%; height: auto; flex: none; }
+  .card .body { padding: 18px; }
+  .card h2 { font-size: 20px; }
+  .card p { font-size: 14.5px; }
+}
+@media (max-width: 560px) {
+  .brand.hide-sm span { display: none; }
+  .seg button { padding: 0 11px; font-size: 13px; }
+  .ex-head { padding-top: 12px; }
+  .ex-head .h-sub { display: none; }
+  .hs .lbl { font-size: 11.5px; padding: 4px 8px; }
+  .hs .lbl.r { left: 32px; } .hs .lbl.l { right: 32px; }
+  .card .thumb { width: 34%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
+}
+
+/* owner mode: keep the floating owner bar clear of content */
+body.owner .chips { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+body.owner .home { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+body.owner .toast { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button class="back" id="backBtn" hidden aria-label="Back to fireplace types"></button>
+  <div class="brand" id="brand"><span id="brandName">Chimney Explorer</span></div>
+  <div class="spacer"></div>
+  <div class="seg" id="styleSeg" role="group" aria-label="Visual style">
+    <button data-v="real" aria-pressed="true">Realistic</button>
+    <button data-v="illus" aria-pressed="false">Illustrated</button>
+  </div>
+  <button class="icon-btn" id="ownerBtn" aria-label="Owner mode"></button>
+</header>
+
+<div class="owner-bar" id="ownerBar" hidden>
+  <span class="dot"></span><span class="txt">Owner mode · saves automatically</span>
+  <button id="ownerSettings"></button><button id="ownerDone">Done</button>
+</div>
+
+<main class="screen home" id="home" aria-hidden="false"></main>
+
+<main class="screen explorer" id="explorer" aria-hidden="true">
+  <div class="ex-head">
+    <div><div class="eyebrow" id="exEyebrow"></div><h1 id="exTitle">Tap any part to explore</h1></div>
+    <div class="ex-tools" id="exTools"></div>
+  </div>
+  <div class="stage-wrap" id="stageWrap">
+    <div class="stage" id="stage">
+      <div class="art" id="art"></div>
+      <div id="hotspots"></div>
+    </div>
+  </div>
+  <nav class="chips" id="chips" aria-label="Parts"></nav>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" aria-labelledby="sheetTitle">
+  <div class="grip" id="sheetGrip" aria-hidden="true"></div>
+  <div class="scroll" id="sheetScroll"></div>
+</aside>
+
+<div class="modal" id="modal"></div>
+<div class="lightbox" id="lightbox"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Chimney Explorer — default content. Everything here can be edited in Owner mode;
+   edits are stored on the device and override these defaults. */
+(function () {
+  'use strict';
+
+  const TYPES = [
+    {
+      id: 'masonry',
+      name: 'Masonry Chimney',
+      desc: 'A traditional brick chimney and fireplace, from the cap on the roof down to the hearth.',
+      parts: [
+        { id: 'cap', x: 300, y: 64, side: 'r' },
+        { id: 'crown', x: 386, y: 124, side: 'r' },
+        { id: 'flashing', x: 232, y: 318, side: 'l' },
+        { id: 'liner', x: 300, y: 250, side: 'r' },
+        { id: 'brick', x: 366, y: 470, side: 'r' },
+        { id: 'smoke', x: 300, y: 630, side: 'r' },
+        { id: 'damper', x: 300, y: 684, side: 'l' },
+        { id: 'firebox', x: 300, y: 790, side: 'r' },
+        { id: 'hearth', x: 450, y: 936, side: 'l' }
+      ]
+    },
+    {
+      id: 'wood',
+      name: 'Wood-Burning Fireplace',
+      desc: 'An open fireplace in side section. See how the fire draws air and where the smoke goes.',
+      parts: [
+        { id: 'liner', x: 310, y: 150, side: 'r' },
+        { id: 'smoke', x: 312, y: 345, side: 'r' },
+        { id: 'shelf', x: 268, y: 490, side: 'l' },
+        { id: 'damper', x: 336, y: 462, side: 'r' },
+        { id: 'firebrick', x: 214, y: 640, side: 'l' },
+        { id: 'firebox', x: 330, y: 560, side: 'r' },
+        { id: 'mantel', x: 452, y: 405, side: 'l' },
+        { id: 'hearth', x: 500, y: 694, side: 'l' },
+        { id: 'ashdump', x: 272, y: 780, side: 'r' }
+      ]
+    },
+    {
+      id: 'insert',
+      name: 'Fireplace Insert',
+      desc: 'A sealed, high-efficiency stove fitted into an existing masonry fireplace.',
+      parts: [
+        { id: 'flexliner', x: 300, y: 110, side: 'r' },
+        { id: 'blockoff', x: 380, y: 299, side: 'r' },
+        { id: 'insert', x: 300, y: 432, side: 'r' },
+        { id: 'glass', x: 300, y: 512, side: 'r' },
+        { id: 'gasket', x: 229, y: 592, side: 'l' },
+        { id: 'blower', x: 300, y: 651, side: 'r' },
+        { id: 'surround', x: 179, y: 470, side: 'l' }
+      ]
+    }
+  ];
+
+  const PARTS = {
+    cap: {
+      name: 'Chimney Cap',
+      tagline: 'The roof over your chimney.',
+      what: 'The cap is the metal cover that sits on top of the flue. It keeps rain, snow, leaves and animals out of the chimney, and its mesh screen stops hot embers from landing on your roof.\n\nA good cap also helps block wind from blowing down the chimney, so smoke goes up instead of back into the room.',
+      problems: ['Missing or blown off in a storm', 'Rusted or corroded metal', 'Mesh screen clogged with soot, which chokes the draft', 'Birds, squirrels or raccoons nesting inside', 'Wrong size for the flue'],
+      service: 'We measure your flue and install a properly sized stainless steel or copper cap that is built to last. We also clean clogged screens, replace rusted caps, and fit custom caps for chimneys with more than one flue.'
+    },
+    crown: {
+      name: 'Chimney Crown',
+      tagline: 'The concrete lid that seals the top of the brick.',
+      what: 'The crown is the sloped concrete slab that covers the top of the chimney around the flue. Its job is to shed water away from the brickwork.\n\nWater that gets past a damaged crown soaks down into the masonry, where freezing and thawing slowly breaks it apart from the inside.',
+      problems: ['Cracks from years of freeze and thaw', 'Built from thin mortar instead of proper concrete', 'No overhang, so water runs straight down the brick', 'Pieces breaking off and falling'],
+      service: 'Small cracks are sealed with a flexible, waterproof crown coating. When the crown is too far gone, we rebuild it with reinforced concrete, a proper overhang and drip edge, and an expansion gap around the flue.'
+    },
+    flashing: {
+      name: 'Flashing',
+      tagline: 'The watertight seal where chimney meets roof.',
+      what: 'Flashing is the bent metal that covers the joint between your roof and the chimney. Step flashing is woven into the shingles, and counter-flashing is cut into the mortar joints and laps over it.\n\nWhen it works, you never think about it. When it fails, it is one of the most common causes of roof leaks.',
+      problems: ['Water stains on the ceiling or walls near the chimney', 'Metal lifted, bent or rusted through', 'Old tar or caulk patches that have dried and cracked', 'Counter-flashing pulled out of the mortar joints'],
+      service: 'We remove the failed flashing and install new step and counter-flashing, cut and sealed into the mortar joints. On wide chimneys we add a cricket, a small peaked roof that steers water around the chimney.'
+    },
+    liner: {
+      name: 'Flue Liner',
+      tagline: 'The protective channel that carries smoke out.',
+      what: 'The flue liner is the clay tile or metal pipe running up the inside of the chimney. It carries smoke and hot gases safely out of the house, and keeps heat and acidic byproducts away from the brick and the wood framing around it.\n\nThe liner also has to be the right size for your fireplace or stove so the chimney draws properly.',
+      problems: ['Cracked or broken tiles, often after a chimney fire', 'Gaps in the mortar joints between tiles', 'Heavy creosote buildup, which is a fire risk', 'Wrong size for the appliance, causing smoke and poor draft'],
+      service: 'We inspect the full length of the flue with a camera and show you what we find. Depending on the damage we repair the tile joints, or reline the chimney with a stainless steel liner sized to your fireplace or stove.'
+    },
+    brick: {
+      name: 'Brick & Mortar',
+      tagline: 'The structure that holds everything together.',
+      what: 'The bricks give the chimney its strength, and the mortar joints between them hold it together and keep water out. Mortar is designed to wear out before the brick does, so it needs attention every few decades.',
+      problems: ['Spalling: brick faces flaking or popping off', 'Mortar joints that are crumbling or recessed', 'White chalky stains (efflorescence), a sign water is getting in', 'Cracks, leaning, or loose bricks near the top'],
+      service: 'We repoint worn joints (tuckpointing) with matching mortar, replace damaged bricks with color-matched ones, and rebuild the top of the chimney when needed. We finish with a breathable water repellent that keeps rain out without trapping moisture.'
+    },
+    smoke: {
+      name: 'Smoke Chamber',
+      tagline: 'The funnel between the fireplace and the flue.',
+      what: 'The smoke chamber is the funnel-shaped space above the damper. It gathers smoke from the wide fireplace and squeezes it into the narrow flue.\n\nIts walls should be smooth so smoke flows straight up. Rough, stepped brick creates turbulence, slows the draft and collects creosote.',
+      problems: ['Rough, stepped brick that traps creosote', 'Cracks or gaps that let heat reach nearby wood framing', 'Smoke coming back into the room', 'Flagged in a home inspection'],
+      service: 'We parge the smoke chamber: a heat-resistant refractory mortar applied in a smooth, sealed coat. This improves draft, makes the chamber easier to clean, and closes gaps that are a fire hazard.'
+    },
+    damper: {
+      name: 'Damper',
+      tagline: 'The door that opens for fires and closes after.',
+      what: 'The damper is a metal plate that you open when you light a fire and close when the fireplace is not in use. Closed, it keeps your heated or cooled air in the house and keeps cold drafts, rain and animals out.',
+      problems: ['Rusted shut or stuck open', 'Warped plate that no longer seals', 'Broken handle or chain', 'Cold drafts and higher energy bills'],
+      service: 'We repair or replace throat dampers. Often the best fix is a top-sealing damper: it mounts at the top of the chimney, seals tightly with a rubber gasket, and doubles as a rain cap.'
+    },
+    firebox: {
+      name: 'Firebox',
+      tagline: 'Where the fire actually burns.',
+      what: 'The firebox is the chamber where you build the fire. It is lined with firebrick and heat-resistant refractory mortar, which can handle temperatures that would crack normal brick.\n\nIts shape also matters: the angled walls reflect heat into the room.',
+      problems: ['Cracked or loose firebricks', 'Mortar joints eroded more than a quarter inch deep', 'Gaps that let heat reach the masonry and framing behind', 'Cracked refractory panels in factory-built fireplaces'],
+      service: 'We replace damaged firebricks, repoint joints with refractory mortar, and rebuild the firebox when needed. For factory-built fireplaces we install new refractory panels.'
+    },
+    hearth: {
+      name: 'Hearth',
+      tagline: 'The fireproof floor in front of the fire.',
+      what: 'The hearth is the non-combustible floor inside the fireplace and the slab that extends out into the room. It protects your floor from sparks, rolling logs and hot ash.\n\nBuilding codes set how far it must extend in front of and beside the opening.',
+      problems: ['Cracked slab or loose tiles', 'Too small to meet code for the size of the opening', 'Gaps where embers could reach the wood subfloor', 'Scorch marks on the floor nearby'],
+      service: 'We repair or replace hearth slabs and tiles, extend undersized hearths to code, and seal gaps so embers can never reach the floor structure.'
+    },
+    firebrick: {
+      name: 'Firebrick Lining',
+      tagline: 'The heat-proof walls of the firebox.',
+      what: 'Firebrick is a dense, heat-resistant brick laid with refractory mortar. It lines the back, sides and floor of the firebox and takes the direct heat of the fire so the structure behind it stays safe.\n\nThe sloped back wall reflects heat forward and guides smoke toward the throat.',
+      problems: ['Cracked or spalling firebricks', 'Missing or crumbling mortar between bricks', 'Bricks pushed loose by heat and expansion', 'Heat damage reaching the masonry behind'],
+      service: 'We replace damaged firebrick and repoint with refractory mortar. When the lining is worn out we rebuild the back and side walls with new firebrick to the correct angles.'
+    },
+    shelf: {
+      name: 'Smoke Shelf',
+      tagline: 'The ledge that stops downdrafts.',
+      what: 'The smoke shelf is the flat ledge right behind the damper, at the bottom of the smoke chamber. Cold air coming down the chimney hits the shelf and turns back up, instead of pushing smoke into the room.\n\nIt also catches debris, so it needs regular cleaning.',
+      problems: ['Piled with soot, debris or nesting material', 'Rust and water damage from a leaking chimney', 'Cracked or crumbling masonry'],
+      service: 'We clean the smoke shelf on every sweep, check it for water damage, and repair or seal the masonry where needed.'
+    },
+    mantel: {
+      name: 'Mantel & Surround',
+      tagline: 'The finished face around the fireplace.',
+      what: 'The surround is the stone, tile or brick facing around the fireplace opening. The mantel is the decorative shelf above it.\n\nBecause a mantel is usually wood, it must sit a safe distance from the opening. Codes set those distances by how far the mantel sticks out.',
+      problems: ['Wood mantel or trim too close to the opening', 'Scorching or discoloring above the opening', 'Cracked tiles or loose stone facing', 'Gaps between the facing and the firebox'],
+      service: 'We check clearances and correct them, reset loose stone, replace cracked tile, and seal gaps between the surround and the firebox.'
+    },
+    ashdump: {
+      name: 'Ash Dump & Ash Pit',
+      tagline: 'A trapdoor that makes cleanup easy.',
+      what: 'Many masonry fireplaces have a small metal door in the firebox floor. Cold ashes are swept through it into an ash pit below, then removed through a cleanout door outside or in the basement.',
+      problems: ['Missing or stuck lid that lets drafts and embers through', 'Ash pit filled to the top', 'Rusted or missing cleanout door', 'Water collecting in the pit'],
+      service: 'We replace ash dump and cleanout doors, empty and inspect the ash pit, and fix the source of any water getting in.'
+    },
+    insert: {
+      name: 'Insert Unit',
+      tagline: 'A high-efficiency stove inside your fireplace.',
+      what: 'An insert is a closed firebox, usually steel or cast iron, that slides into an existing masonry fireplace. Because it is sealed, it burns far more efficiently and sends much more heat into the room than an open fireplace.\n\nInserts can burn wood, gas or pellets.',
+      problems: ['Low heat output or hard to keep burning', 'Warped or cracked baffle or interior parts', 'Smoke smell or soot in the room', 'Overfiring that damages the unit'],
+      service: 'We clean and service inserts every year and replace worn parts like baffles and bricks. We also size and install new inserts, including the full chimney liner they need.'
+    },
+    surround: {
+      name: 'Surround Panel',
+      tagline: 'The trim that fits the insert to your fireplace.',
+      what: 'The surround is the metal panel around the insert. It covers the gap between the insert and the old fireplace opening, gives a finished look, and stops room air from leaking around the unit.',
+      problems: ['Gaps around the edges', 'Loose or bent panel', 'Missing insulation behind the panel', 'Wrong size for the opening'],
+      service: 'We fit and secure the surround, insulate behind it, and seal it so warm air stays in the room.'
+    },
+    glass: {
+      name: 'Glass Door',
+      tagline: 'Watch the fire, keep it contained.',
+      what: 'The door glass is special ceramic glass that can handle very high temperatures. It lets you see the fire while keeping the firebox sealed.\n\nMany inserts use an air-wash system that sweeps clean air across the glass to keep it clear.',
+      problems: ['Black or white haze that will not wipe off', 'Cracked or chipped glass (do not use the insert)', 'Loose clips or frame', 'Glass that gets dirty quickly, a sign of a poor burn'],
+      service: 'We professionally clean stubborn deposits and replace cracked glass with the correct rated ceramic glass for your model. We also look for the cause of fast-dirtying glass, such as wet wood or a draft problem.'
+    },
+    gasket: {
+      name: 'Door Gasket',
+      tagline: 'The rope seal that keeps the fire in control.',
+      what: 'The gasket is a woven fiberglass rope around the door and glass. It makes the firebox airtight, so the air controls set how hot and how long the fire burns.',
+      problems: ['Flattened, frayed or hardened rope', 'Smoke leaking from the door edge', 'Fire burns too hot and cannot be turned down', 'Door closes too loosely'],
+      service: 'We replace gaskets with the correct diameter and density for your unit and adjust the latch so the door seals tight.'
+    },
+    blower: {
+      name: 'Blower',
+      tagline: 'The fan that pushes warm air into the room.',
+      what: 'The blower is a quiet fan beneath or behind the firebox. It pulls room air through channels around the hot firebox and sends it back out warm, so heat spreads across the room instead of staying near the fireplace.',
+      problems: ['Loud humming, rattling or squealing', 'Does not turn on, or turns off too early', 'Clogged with dust and ash', 'Failed temperature sensor'],
+      service: 'We clean the blower and its air channels and replace worn motors, bearings or sensors with the correct parts for your model.'
+    },
+    flexliner: {
+      name: 'Stainless Steel Liner',
+      tagline: 'A dedicated chimney for your insert.',
+      what: 'An insert needs a full-length stainless steel liner, connected directly from the insert to the top of the chimney. The old clay flue is usually too large for an insert, which leads to poor draft and heavy creosote.\n\nThe liner is sized to the insert\'s outlet and often insulated.',
+      problems: ['No liner, with the insert vented into the old flue', 'Wrong diameter for the insert', 'Loose or gapped connection at the insert', 'Creosote buildup inside the liner'],
+      service: 'We install full-length, insulated stainless steel liners with a sealed top plate and cap, and we sweep and inspect existing liners every year.'
+    },
+    blockoff: {
+      name: 'Block-Off Plate',
+      tagline: 'Keeps the heat in the room, not up the chimney.',
+      what: 'The block-off plate is a sheet-metal plate that seals the old damper area around the liner. It keeps heat from the insert in the room, stops cold air from coming down, and is required by many insert manufacturers.',
+      problems: ['Missing plate, so heat escapes up the old chimney', 'Gaps around the liner', 'Rusted or loose plate'],
+      service: 'We fabricate a custom plate for your fireplace and seal it around the liner with high-temperature sealant.'
+    }
+  };
+
+  const SETTINGS = {
+    business: 'Chimney Explorer',
+    phone: '',
+    homeTitle: 'What type of fireplace do you have?',
+    homeSub: 'Choose one to explore how it works, part by part.'
+  };
+
+  window.CX_CONTENT = { TYPES, PARTS, SETTINGS };
+})();
+
+</script>
+<script>
+/* Chimney Explorer — scene renderers.
+   Each scene is drawn twice from the same geometry: a shaded "realistic" render
+   and a clean "illustrated" diagram. Hit areas and hotspot positions are shared,
+   so both versions stay perfectly aligned. */
+(function () {
+  'use strict';
+
+  /* ---------- tiny helpers ---------- */
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const f = (n) => Math.round(n * 100) / 100;
+  const pts = (a) => a.map((p) => f(p[0]) + ',' + f(p[1])).join(' ');
+  const poly = (a, attr) => `<polygon points="${pts(a)}" ${attr || ''}/>`;
+  const rect = (x, y, w, h, attr) => `<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" ${attr || ''}/>`;
+  const path = (d, attr) => `<path d="${d}" ${attr || ''}/>`;
+  const polyD = (a) => 'M' + a.map((p) => f(p[0]) + ' ' + f(p[1])).join('L') + 'Z';
+  const rectD = (x, y, w, h) => polyD([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]);
+
+  let UID = 0;
+  function makeCtx(real) {
+    const pre = 'cx' + (++UID) + '-';
+    return { real, id: (n) => pre + n, url: (n) => `url(#${pre}${n})` };
+  }
+
+  const INK = '#3a2f2a'; // illustrated outline colour
+  const OUT = `stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"`;
+
+  /* ---------- shared defs ---------- */
+  function defs(c) {
+    const id = c.id;
+    if (!c.real) {
+      return `<defs>
+        <linearGradient id="${id('glow')}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb066" stop-opacity=".55"/><stop offset="1" stop-color="#ffb066" stop-opacity="0"/></linearGradient>
+      </defs>`;
+    }
+    return `<defs>
+      <linearGradient id="${id('sky')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9cad8"/><stop offset=".6" stop-color="#dfe6ea"/><stop offset="1" stop-color="#eceae4"/></linearGradient>
+      <linearGradient id="${id('attic')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2d24"/><stop offset="1" stop-color="#5b4836"/></linearGradient>
+      <linearGradient id="${id('wall')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7ded2"/><stop offset="1" stop-color="#d6c9b8"/></linearGradient>
+      <radialGradient id="${id('roomlight')}" cx=".5" cy=".75" r=".7"><stop offset="0" stop-color="#ffcf9a" stop-opacity=".35"/><stop offset="1" stop-color="#ffcf9a" stop-opacity="0"/></radialGradient>
+      <linearGradient id="${id('cavity')}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#140e0b"/><stop offset=".5" stop-color="#2a1f19"/><stop offset="1" stop-color="#120c09"/></linearGradient>
+      <linearGradient id="${id('liner')}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6d2c16"/><stop offset=".22" stop-color="#b65a31"/><stop offset=".42" stop-color="#e09468"/><stop offset=".55" stop-color="#c46c40"/><stop offset=".85" stop-color="#8a3a1d"/><stop offset="1" stop-color="#5a2210"/></linearGradient>
+      <linearGradient id="${id('linerSec')}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9c4a26"/><stop offset="1" stop-color="#c7754a"/></linearGradient>
+      <linearGradient id="${id('steel')}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7d848c"/><stop offset=".3" stop-color="#e6eaee"/><stop offset=".5" stop-color="#b6bdc4"/><stop offset=".75" stop-color="#eef1f3"/><stop offset="1" stop-color="#6f767e"/></linearGradient>
+      <linearGradient id="${id('iron')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b4f55"/><stop offset=".5" stop-color="#25282c"/><stop offset="1" stop-color="#121315"/></linearGradient>
+      <linearGradient id="${id('ironH')}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1b1d20"/><stop offset=".45" stop-color="#5a5f66"/><stop offset=".6" stop-color="#33373c"/><stop offset="1" stop-color="#141517"/></linearGradient>
+      <linearGradient id="${id('alu')}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef1f4"/><stop offset=".5" stop-color="#a9b1b9"/><stop offset="1" stop-color="#d7dce1"/></linearGradient>
+      <linearGradient id="${id('concrete')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfccc6"/><stop offset="1" stop-color="#8e8a84"/></linearGradient>
+      <linearGradient id="${id('parge')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d2826"/><stop offset=".35" stop-color="#6b6560"/><stop offset="1" stop-color="#8d8780"/></linearGradient>
+      <linearGradient id="${id('soot')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d0a08"/><stop offset="1" stop-color="#3b2c22"/></linearGradient>
+      <linearGradient id="${id('stone')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9d3ca"/><stop offset="1" stop-color="#a59c90"/></linearGradient>
+      <linearGradient id="${id('wood')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5a35"/><stop offset=".5" stop-color="#6e4426"/><stop offset="1" stop-color="#4f2f19"/></linearGradient>
+      <linearGradient id="${id('glass')}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".35" stop-color="#fff" stop-opacity=".04"/><stop offset=".5" stop-color="#fff" stop-opacity=".16"/><stop offset=".62" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <linearGradient id="${id('flame')}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a12"/><stop offset=".5" stop-color="#ff9a2e"/><stop offset="1" stop-color="#ffcf63" stop-opacity=".2"/></linearGradient>
+      <linearGradient id="${id('flameIn')}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff1b8"/><stop offset="1" stop-color="#ffc24a" stop-opacity=".1"/></linearGradient>
+      <radialGradient id="${id('glow')}" cx=".5" cy=".85" r=".65"><stop offset="0" stop-color="#ffb35c" stop-opacity=".95"/><stop offset=".45" stop-color="#ff7a26" stop-opacity=".45"/><stop offset="1" stop-color="#ff6a1a" stop-opacity="0"/></radialGradient>
+      <linearGradient id="${id('lightL')}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff3e6" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>
+      <radialGradient id="${id('vignette')}" cx=".5" cy=".5" r=".75"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient>
+      <linearGradient id="${id('shingle')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4d52"/><stop offset="1" stop-color="#2b2d31"/></linearGradient>
+      <pattern id="${id('planks')}" patternUnits="userSpaceOnUse" width="120" height="14"><rect width="120" height="14" fill="#9b6a42"/><rect y="0" width="120" height="1" fill="#6e4628"/><rect x="0" y="7" width="120" height="1" fill="#7a4f2e" opacity=".6"/><rect x="40" y="0" width="1" height="7" fill="#5c3a20"/><rect x="95" y="7" width="1" height="7" fill="#5c3a20"/><path d="M0 3.5 Q30 2 60 4 T120 3" stroke="#b07c50" stroke-width=".7" fill="none" opacity=".6"/><path d="M0 10.5 Q40 9 80 11 T120 10" stroke="#84552f" stroke-width=".7" fill="none" opacity=".6"/></pattern>
+      <pattern id="${id('mesh')}" patternUnits="userSpaceOnUse" width="5" height="5"><rect width="5" height="5" fill="#1a1c1f" fill-opacity=".25"/><path d="M0 0H5M0 0V5" stroke="#9aa1a8" stroke-width=".9"/></pattern>
+      <pattern id="${id('corr')}" patternUnits="userSpaceOnUse" width="10" height="6"><rect width="10" height="6" fill="none"/><rect y="0" width="10" height="2.2" fill="#000" opacity=".22"/><rect y="3.2" width="10" height="1" fill="#fff" opacity=".45"/></pattern>
+      <pattern id="${id('insul')}" patternUnits="userSpaceOnUse" width="14" height="10"><rect width="14" height="10" fill="#e7b48f"/><path d="M0 6 Q3.5 1 7 6 T14 6" stroke="#cf9670" stroke-width="1" fill="none"/></pattern>
+      <filter id="${id('noise')}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 .5  0 0 0 0 .45  0 0 0 0 .4  0 0 0 -1.25 .62"/></filter>
+      <filter id="${id('blur2')}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
+      <filter id="${id('blur6')}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+      <filter id="${id('blur14')}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="14"/></filter>
+      <filter id="${id('shadow')}" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".35"/></filter>
+    </defs>`;
+  }
+
+  /* ---------- masonry generators ---------- */
+  // Running-bond brick wall clipped to `clipD`. Courses start at oy, columns at ox.
+  function bricks(c, key, clipD, box, o) {
+    o = o || {};
+    const bw = o.bw || 32, bh = o.bh || 11, ox = o.ox != null ? o.ox : box.x, oy = o.oy != null ? o.oy : box.y;
+    const cid = c.id('clip-' + key);
+    let s = `<clipPath id="${cid}"><path d="${clipD}" clip-rule="evenodd"/></clipPath><g clip-path="url(#${cid})">`;
+    const i0 = Math.floor((box.y - oy) / bh) - 1, i1 = Math.ceil((box.y + box.h - oy) / bh) + 1;
+    if (c.real) {
+      const r = rng(o.seed || 7);
+      const hue = o.hue || [6, 18], sat = o.sat || [40, 56], lig = o.lig || [30, 43];
+      s += rect(box.x, box.y, box.w, box.h, `fill="${o.mortar || '#a89d90'}"`);
+      for (let i = i0; i <= i1; i++) {
+        const y = oy + i * bh;
+        const shift = (((i % 2) + 2) % 2) ? -bw / 2 : 0;
+        let x = ox + shift;
+        while (x > box.x) x -= bw;
+        for (; x < box.x + box.w; x += bw) {
+          let l = lig[0] + r() * (lig[1] - lig[0]);
+          if (r() < 0.07) l -= 8;
+          const col = `hsl(${f(hue[0] + r() * (hue[1] - hue[0]))},${f(sat[0] + r() * (sat[1] - sat[0]))}%,${f(l)}%)`;
+          s += rect(x + 0.8, y + 0.8, bw - 1.6, bh - 1.6, `rx="0.9" fill="${col}"`);
+        }
+      }
+      // bevel: highlight on top edge, shadow on bottom edge of each course
+      const pid = c.id('bv-' + key);
+      s += `<pattern id="${pid}" patternUnits="userSpaceOnUse" x="${ox}" y="${oy}" width="${bw}" height="${bh}"><rect x="0" y="0.8" width="${bw}" height="1" fill="#fff" opacity=".13"/><rect x="0" y="${bh - 2}" width="${bw}" height="1.2" fill="#000" opacity=".28"/></pattern>`;
+      s += rect(box.x, box.y, box.w, box.h, `fill="url(#${pid})"`);
+      if (o.dark) s += rect(box.x, box.y, box.w, box.h, `fill="#000" opacity="${o.dark}"`);
+      if (o.light !== false) s += rect(box.x, box.y, box.w, box.h, `fill="${c.url('lightL')}"`);
+    } else {
+      s += rect(box.x, box.y, box.w, box.h, `fill="${o.flat || '#dd7f5f'}"`);
+      let d = '';
+      for (let i = i0; i <= i1; i++) {
+        const y = oy + i * bh;
+        d += `M${box.x} ${y}H${box.x + box.w}`;
+        const shift = (((i % 2) + 2) % 2) ? -bw / 2 : 0;
+        let x = ox + shift;
+        while (x > box.x) x -= bw;
+        for (; x < box.x + box.w; x += bw) d += `M${x} ${y}V${y + bh}`;
+      }
+      s += path(d, `stroke="${o.line || '#f6e4d8'}" stroke-width="1.3" fill="none"`);
+      if (o.dark) s += rect(box.x, box.y, box.w, box.h, `fill="${INK}" opacity="${o.dark}"`);
+    }
+    return s + '</g>';
+  }
+
+  function joint(ox, k, bw) { return ox + ((k % 2) ? -bw / 2 : 0); }
+  // snap to a brick end at or below / at or above a target
+  function snapDown(ox, k, bw, target) { let x = joint(ox, k, bw); while (x + bw <= target) x += bw; while (x > target) x -= bw; return x; }
+  function snapUp(ox, k, bw, target) { let x = joint(ox, k, bw); while (x < target) x += bw; return x; }
+
+  /* ---------- fire ---------- */
+  function flamePath(cx, base, w, h, lean) {
+    lean = lean || 0;
+    return `M${f(cx - w)} ${f(base)} C${f(cx - w)} ${f(base - h * 0.45)} ${f(cx - w * 0.2 + lean)} ${f(base - h * 0.6)} ${f(cx + lean)} ${f(base - h)} C${f(cx + w * 0.35 + lean)} ${f(base - h * 0.55)} ${f(cx + w)} ${f(base - h * 0.4)} ${f(cx + w)} ${f(base)} Z`;
+  }
+  function fire(c, cx, base, s) {
+    s = s || 1;
+    let o = '';
+    const logW = 120 * s;
+    if (c.real) {
+      o += `<ellipse cx="${cx}" cy="${base - 40 * s}" rx="${110 * s}" ry="${80 * s}" fill="${c.url('glow')}" filter="${c.url('blur14')}" class="glow"/>`;
+    }
+    // grate
+    o += rect(cx - 70 * s, base - 6 * s, 140 * s, 5 * s, c.real ? `fill="${c.url('iron')}"` : `fill="${INK}"`);
+    o += rect(cx - 64 * s, base - 6 * s, 6 * s, 10 * s, c.real ? `fill="#1a1a1a"` : `fill="${INK}"`) + rect(cx + 58 * s, base - 6 * s, 6 * s, 10 * s, c.real ? `fill="#1a1a1a"` : `fill="${INK}"`);
+    // flames
+    const fl = [
+      [cx - 34 * s, 26 * s, 70 * s, -6 * s], [cx + 6 * s, 30 * s, 92 * s, 4 * s], [cx + 40 * s, 22 * s, 62 * s, 8 * s], [cx - 8 * s, 18 * s, 56 * s, -3 * s]
+    ];
+    o += '<g class="flames">';
+    fl.forEach((q, i) => {
+      const base2 = base - 16 * s;
+      if (c.real) {
+        o += path(flamePath(q[0], base2, q[1], q[2], q[3]), `fill="${c.url('flame')}" filter="${c.url('blur2')}" class="fl fl${i}"`);
+      } else {
+        o += path(flamePath(q[0], base2, q[1], q[2], q[3]), `fill="#ff7a32" class="fl fl${i}"`);
+      }
+    });
+    fl.forEach((q, i) => {
+      const base2 = base - 16 * s;
+      o += path(flamePath(q[0], base2, q[1] * 0.55, q[2] * 0.6, q[3]), c.real ? `fill="${c.url('flameIn')}" class="fl fl${i}"` : `fill="#ffc65c" class="fl fl${i}"`);
+    });
+    o += '</g>';
+    // logs
+    const logFill = c.real ? c.url('wood') : '#8b5a3c';
+    o += `<g transform="rotate(-6 ${cx} ${base - 14 * s})">` + rect(cx - logW / 2, base - 24 * s, logW, 14 * s, `rx="${7 * s}" fill="${logFill}" ${c.real ? '' : OUT}`) + `</g>`;
+    o += `<g transform="rotate(7 ${cx} ${base - 12 * s})">` + rect(cx - logW / 2 + 6 * s, base - 18 * s, logW - 10 * s, 13 * s, `rx="${6.5 * s}" fill="${logFill}" ${c.real ? '' : OUT}`) + `</g>`;
+    if (c.real) {
+      o += `<ellipse cx="${cx}" cy="${base - 10 * s}" rx="${55 * s}" ry="${7 * s}" fill="#ff8a2a" opacity=".55" filter="${c.url('blur2')}"/>`;
+      const r = rng(11);
+      for (let i = 0; i < 14; i++) o += `<circle cx="${f(cx - 50 * s + r() * 100 * s)}" cy="${f(base - 6 * s - r() * 8 * s)}" r="${f(0.8 + r() * 1.4)}" fill="#ffcf6a" opacity="${f(0.5 + r() * 0.5)}"/>`;
+    }
+    return o;
+  }
+
+  function overlays(c, W, H) {
+    if (!c.real) return '';
+    return rect(0, 0, W, H, `fill="#000" filter="${c.url('noise')}" opacity=".5" style="mix-blend-mode:multiply" pointer-events="none"`) +
+      rect(0, 0, W, H, `fill="${c.url('vignette')}" pointer-events="none"`);
+  }
+
+  /* =================================================================
+     SCENE 1 — Masonry chimney (front cutaway, roof to hearth)
+     ================================================================= */
+  function masonry(c) {
+    const W = 600, H = 1000, R = c.real;
+    const roofY = (x) => 300 + 0.2 * x;
+    const OY = 132, BH = 11, BW = 32;
+    let o = defs(c);
+
+    // background: sky, attic, room
+    o += path(`M0 0H600V${roofY(600)}L0 ${roofY(0)}Z`, `fill="${R ? c.url('sky') : '#eef3f6'}"`);
+    o += poly([[0, roofY(0) + 38], [600, roofY(600) + 38], [600, 546], [0, 546]], `fill="${R ? c.url('attic') : '#f4eee7'}"`);
+    // attic insulation
+    o += rect(0, 526, 600, 20, R ? `fill="${c.url('insul')}"` : `fill="#f6dccd"`);
+    if (!R) o += path('M0 526' + Array.from({ length: 30 }, (_, i) => `Q${i * 20 + 10} 518 ${i * 20 + 20} 526`).join(''), `fill="#f6dccd" stroke="${INK}" stroke-width="1.2"`);
+    // ceiling
+    o += rect(0, 546, 600, 15, R ? `fill="#efe9e1"` : `fill="#ffffff" ${OUT}`);
+    if (R) o += rect(0, 559, 600, 2, 'fill="#000" opacity=".12"');
+    // room wall
+    o += rect(0, 561, 600, 387, `fill="${R ? c.url('wall') : '#faf6f0'}"`);
+    if (R) o += rect(0, 561, 600, 387, `fill="${c.url('roomlight')}"`);
+    // baseboard + floor
+    o += rect(0, 931, 600, 17, R ? 'fill="#f4efe7"' : `fill="#ffffff" ${OUT}`);
+    if (R) o += rect(0, 946, 600, 2, 'fill="#000" opacity=".15"');
+    o += rect(0, 948, 600, 52, R ? `fill="${c.url('planks')}"` : 'fill="#ecdcc7"');
+    if (!R) o += path('M0 962H600M0 976H600M0 990H600M90 948V962M300 962V976M450 948V962M180 976V990M520 976V990', `stroke="#d4bda1" stroke-width="1.2" fill="none"`);
+    if (R) o += rect(0, 948, 600, 52, 'fill="#000" opacity=".12"');
+
+    // roof section: shingles, sheathing, rafter
+    const band = (a, b) => [[-10, roofY(-10) + a], [610, roofY(610) + a], [610, roofY(610) + b], [-10, roofY(-10) + b]];
+    o += poly(band(16, 38), R ? 'fill="#b88a5a"' : `fill="#e8c9a0" ${OUT}`);
+    o += poly(band(8, 16), R ? 'fill="#d8b47f"' : `fill="#f3dfbf" ${OUT}`);
+    o += poly(band(-2, 8), R ? `fill="${c.url('shingle')}"` : `fill="#5f646b" ${OUT}`);
+    if (R) {
+      let d = '';
+      for (let x = -10; x < 610; x += 14) d += `M${x} ${f(roofY(x) - 2)}L${x + 3} ${f(roofY(x + 3) + 8)}`;
+      o += path(d, 'stroke="#18191b" stroke-width="1" opacity=".6"');
+      o += poly(band(-2, 0), 'fill="#fff" opacity=".18"');
+    }
+
+    // stack + chimney breast (front face)
+    const stack = { x: 220, y: OY, w: 160, h: 561 - OY };
+    const breast = { x: 140, y: 561, w: 320, h: 925 - 561 };
+
+    // stepped cutaway region, following real brick ends
+    const r = rng(42);
+    const left = [], right = [];
+    let wl = 0, wr = 0;
+    for (let k = 1; k <= 51; k++) {
+      const y = OY + k * BH;
+      const inStack = y < 561;
+      const ox = inStack ? 220 : 140;
+      let L, Rr;
+      // random walk so the broken edge looks hand-demolished, not combed
+      if (k % 3 === 1) { wl = Math.max(-1, Math.min(1, wl + (r() < 0.5 ? -1 : 1))); wr = Math.max(-1, Math.min(1, wr + (r() < 0.5 ? -1 : 1))); }
+      if (k <= 39) { L = snapDown(ox, k, BW, 252 - wl * 14); Rr = snapUp(ox, k, BW, 348 + wr * 14); }
+      else { L = snapDown(ox, k, BW, 200 - Math.abs(wl) * 24); Rr = snapUp(ox, k, BW, 400 + Math.abs(wr) * 24); }
+      if (inStack) { L = Math.max(L, 226); Rr = Math.min(Rr, 374); }
+      left.push([L, y], [L, y + BH]);
+      right.unshift([Rr, y + BH], [Rr, y]);
+    }
+    const reveal = left.concat(right);
+    const revealD = polyD(reveal);
+    const opening = [200, 714, 200, 211];
+    const openingD = rectD(opening[0], opening[1], opening[2], opening[3]);
+
+    o += bricks(c, 'stack', rectD(stack.x, stack.y, stack.w, stack.h) + revealD, stack, { ox: 220, oy: OY, seed: 3 });
+    o += bricks(c, 'breast', rectD(breast.x, breast.y, breast.w, breast.h) + revealD + openingD, breast, { ox: 140, oy: OY, seed: 9 });
+    if (!R) o += path(rectD(stack.x, stack.y, stack.w, stack.h) + rectD(breast.x, breast.y, breast.w, breast.h), `fill="none" ${OUT}`);
+
+    // inside the cutaway
+    const rid = c.id('reveal');
+    o += `<clipPath id="${rid}"><path d="${revealD}"/></clipPath><g clip-path="url(#${rid})">`;
+    o += rect(150, 130, 300, 590, R ? `fill="${c.url('cavity')}"` : 'fill="#efe5db"');
+    o += bricks(c, 'back', rectD(150, 130, 300, 590), { x: 150, y: 130, w: 300, h: 590 }, { ox: 236, oy: OY + 5, seed: 21, dark: R ? 0.62 : 0.0, flat: '#ecd3c6', line: '#f7ebe3', light: false });
+    // smoke chamber
+    const sc = [[268, 575], [332, 575], [392, 690], [208, 690]];
+    o += poly(sc, R ? `fill="${c.url('parge')}"` : `fill="#c9c1b9" ${OUT}`);
+    if (R) {
+      o += poly([[268, 575], [300, 575], [300, 690], [208, 690]], 'fill="#fff" opacity=".05"');
+      o += path('M290 682 C 280 650, 312 630, 296 600 S 300 585, 300 575', `stroke="#d9d4cf" stroke-width="10" fill="none" opacity=".18" filter="${c.url('blur6')}" class="smoke"/>`);
+    } else {
+      o += path('M300 680 C 285 650, 318 630, 300 600 S 300 585, 300 578', `stroke="#9a918a" stroke-width="2" stroke-dasharray="5 6" fill="none" class="smoke-dash"/>`);
+    }
+    // liner (intact clay tile tube)
+    o += rect(268, 98, 64, 478, R ? `fill="${c.url('liner')}"` : `fill="#e9a27c" ${OUT}`);
+    let jd = '';
+    for (let y = 140; y < 575; y += 48) jd += `M268 ${y}H332`;
+    o += path(jd, R ? 'stroke="#3d1a0c" stroke-width="2" opacity=".55"' : `stroke="${INK}" stroke-width="1.2"`);
+    if (R) o += rect(268, 98, 64, 478, 'fill="#000" opacity=".08"');
+    // damper (open plate in throat)
+    o += rect(206, 690, 188, 9, R ? `fill="${c.url('iron')}"` : `fill="#45413e" ${OUT}`);
+    o += poly([[222, 691], [378, 691], [366, 672], [234, 672]], R ? `fill="${c.url('ironH')}"` : `fill="#6b6662" ${OUT}`);
+    o += rect(296, 676, 8, 14, R ? 'fill="#111"' : `fill="${INK}"`);
+    o += '</g>';
+    // cut edge depth
+    if (R) {
+      o += `<g clip-path="url(#${rid})">${path(revealD, 'fill="none" stroke="#000" stroke-width="18" opacity=".45" filter="' + c.url('blur6') + '"')}${path(revealD, 'fill="none" stroke="#6a2a16" stroke-width="7"')}${path(revealD, 'fill="none" stroke="#c98a6a" stroke-width="1" opacity=".5"')}</g>`;
+    } else {
+      o += path(revealD, `fill="none" ${OUT}`);
+    }
+
+    // steel lintel
+    o += rect(194, 704, 212, 10, R ? `fill="${c.url('iron')}"` : `fill="#4c4844" ${OUT}`);
+
+    // firebox (opening with perspective)
+    const fb = c.id('fb');
+    o += `<clipPath id="${fb}"><path d="${openingD}"/></clipPath><g clip-path="url(#${fb})">`;
+    const back = [[242, 744], [358, 744], [358, 902], [242, 902]];
+    const fbBox = { x: 200, y: 714, w: 200, h: 211 };
+    const fbOpt = { bw: 28, bh: 10, hue: [24, 34], sat: [38, 52], lig: [52, 66], mortar: '#5d4b3d', flat: '#ecd1ab', line: '#c9a47c', light: false };
+    o += bricks(c, 'fbback', polyD(back), fbBox, Object.assign({ ox: 242, oy: 744, seed: 5 }, fbOpt));
+    o += bricks(c, 'fbl', polyD([[200, 714], [242, 744], [242, 902], [200, 925]]), fbBox, Object.assign({ ox: 200, oy: 744, seed: 6, dark: R ? 0.35 : 0.08 }, fbOpt));
+    o += bricks(c, 'fbr', polyD([[400, 714], [358, 744], [358, 902], [400, 925]]), fbBox, Object.assign({ ox: 200, oy: 744, seed: 8, dark: R ? 0.42 : 0.12 }, fbOpt));
+    o += poly([[200, 714], [400, 714], [358, 744], [242, 744]], R ? `fill="${c.url('soot')}"` : `fill="#5d5049"`);
+    o += poly([[200, 925], [400, 925], [358, 902], [242, 902]], R ? 'fill="#4a3a2e"' : 'fill="#d9bf9c"');
+    if (R) o += rect(200, 714, 200, 90, 'fill="#000" opacity=".35"') + poly([[200, 714], [400, 714], [400, 790], [200, 790]], 'fill="#000" opacity=".15"');
+    if (!R) o += path('M242 744V902H358V744ZM200 714L242 744M400 714L358 744M200 925L242 902M400 925L358 902', `fill="none" stroke="${INK}" stroke-width="1.2" opacity=".8"`);
+    o += fire(c, 300, 908, 0.82);
+    o += '</g>';
+    o += rect(200, 714, 200, 211, `fill="none" ${R ? 'stroke="#2a1a12" stroke-width="2"' : OUT}`);
+
+    // hearth
+    o += poly([[118, 925], [482, 925], [492, 934], [108, 934]], R ? `fill="${c.url('stone')}"` : `fill="#ddd6cc" ${OUT}`);
+    o += rect(108, 934, 384, 14, R ? 'fill="#8d847a"' : `fill="#c3bab0" ${OUT}`);
+    if (R) o += rect(108, 948, 384, 6, `fill="#000" opacity=".25" filter="${c.url('blur2')}"`);
+
+    // crown, liner stub, cap
+    o += rect(268, 96, 64, 14, R ? `fill="${c.url('liner')}"` : `fill="#e9a27c" ${OUT}`);
+    o += poly([[204, 133], [396, 133], [396, 123], [338, 109], [262, 109], [204, 123]], R ? `fill="${c.url('concrete')}" filter="${c.url('shadow')}"` : `fill="#d2cec8" ${OUT}`);
+    if (R) o += poly([[204, 123], [262, 109], [338, 109], [396, 123], [396, 125], [204, 125]], 'fill="#fff" opacity=".25"');
+    // cap: legs + mesh + lid
+    o += rect(252, 74, 96, 35, R ? `fill="${c.url('mesh')}"` : `fill="#f1f3f5" ${OUT}`);
+    if (!R) { let md = ''; for (let x = 258; x < 348; x += 7) md += `M${x} 74V109`; for (let y = 80; y < 109; y += 7) md += `M252 ${y}H348`; o += path(md, 'stroke="#8f979f" stroke-width="1"'); }
+    o += rect(250, 74, 4, 35, R ? 'fill="#2b2e32"' : `fill="#4a4f55"`) + rect(346, 74, 4, 35, R ? 'fill="#2b2e32"' : `fill="#4a4f55"`);
+    o += poly([[232, 78], [368, 78], [342, 54], [258, 54]], R ? `fill="${c.url('ironH')}" filter="${c.url('shadow')}"` : `fill="#4a4f55" ${OUT}`);
+    o += rect(228, 76, 144, 5, R ? 'fill="#1b1d20"' : `fill="#3b4045" ${OUT}`);
+    if (R) o += poly([[258, 54], [342, 54], [346, 58], [254, 58]], 'fill="#fff" opacity=".3"');
+
+    // flashing (step + counter flashing where stack meets roof)
+    const fl = (x0, x1, top) => {
+      const yb0 = roofY(x0), yb1 = roofY(x1);
+      return poly([[x0, yb0 - 2], [x1, yb1 - 2], [x1, top], [x0, top]], R ? `fill="${c.url('alu')}" filter="${c.url('shadow')}"` : `fill="#b9c2ca" ${OUT}`);
+    };
+    o += poly([[186, roofY(186) - 3], [220, roofY(220) - 3], [220, roofY(220) + 3], [186, roofY(186) + 3]], R ? `fill="${c.url('alu')}"` : `fill="#b9c2ca" ${OUT}`);
+    o += poly([[380, roofY(380) - 3], [414, roofY(414) - 3], [414, roofY(414) + 3], [380, roofY(380) + 3]], R ? `fill="${c.url('alu')}"` : `fill="#b9c2ca" ${OUT}`);
+    o += fl(220, 244, 314) + fl(356, 380, 343);
+    o += rect(218, 309, 28, 5, R ? 'fill="#8f979f"' : `fill="#9aa4ad" ${OUT}`) + rect(354, 338, 28, 5, R ? 'fill="#8f979f"' : `fill="#9aa4ad" ${OUT}`);
+
+    o += overlays(c, W, H);
+
+    const hits = {
+      brick: { d: rectD(stack.x, stack.y, stack.w, stack.h) + rectD(breast.x, breast.y, breast.w, breast.h) + revealD + openingD, rule: 'evenodd' },
+      flashing: { d: polyD([[184, 300], [250, 300], [250, roofY(250) + 6], [184, roofY(184) + 6]]) + polyD([[350, 330], [416, 330], [416, roofY(416) + 6], [350, roofY(350) + 6]]) },
+      liner: { d: rectD(266, 96, 68, 480) },
+      smoke: { d: polyD(sc) },
+      damper: { d: rectD(204, 668, 192, 34) },
+      firebox: { d: openingD },
+      hearth: { d: polyD([[118, 925], [482, 925], [492, 934], [492, 948], [108, 948], [108, 934]]) },
+      crown: { d: polyD([[204, 133], [396, 133], [396, 123], [338, 109], [262, 109], [204, 123]]) },
+      cap: { d: rectD(226, 50, 148, 59) }
+    };
+    return { W, H, svg: o, hits };
+  }
+
+  /* =================================================================
+     SCENE 2 — Wood-burning fireplace (side section)
+     ================================================================= */
+  function wood(c) {
+    const W = 600, H = 900, R = c.real;
+    let o = defs(c);
+    // background: outside (left), room (right), ground below
+    o += rect(0, 0, 600, 900, `fill="${R ? c.url('sky') : '#eef3f6'}"`);
+    o += rect(392, 0, 208, 702, `fill="${R ? c.url('wall') : '#faf6f0'}"`);
+    if (R) o += rect(392, 0, 208, 702, `fill="${c.url('roomlight')}"`);
+    // ceiling
+    o += rect(392, 140, 208, 16, R ? 'fill="#efe9e1"' : `fill="#fff" ${OUT}`);
+    o += rect(392, 92, 208, 48, R ? `fill="${c.url('attic')}"` : 'fill="#f4eee7"');
+    o += rect(392, 120, 208, 20, R ? `fill="${c.url('insul')}"` : `fill="#f6dccd"`);
+    // floor system + basement
+    o += rect(392, 702, 208, 14, R ? `fill="${c.url('planks')}"` : `fill="#ecdcc7" ${OUT}`);
+    o += rect(392, 716, 208, 30, R ? 'fill="#c79c6c"' : `fill="#ead1ae" ${OUT}`);
+    o += rect(392, 746, 208, 154, R ? 'fill="#3b332c"' : 'fill="#ece6de"');
+    o += rect(0, 746, 120, 154, R ? 'fill="#5a4636"' : 'fill="#e2d3c2"');
+    if (R) o += rect(0, 746, 120, 154, `fill="#000" filter="${c.url('noise')}" opacity=".6"`);
+    o += rect(0, 742, 120, 6, R ? 'fill="#4c7a3a"' : 'fill="#9fc28a"');
+
+    // masonry mass (section) — brick hatch
+    const mass = [[232, 0], [392, 0], [392, 270], [410, 320], [410, 900], [120, 900], [120, 340], [232, 280]];
+    const massD = polyD(mass);
+    const cav = [[275, 0], [345, 0], [345, 300], [368, 490], [368, 498], [410, 520], [410, 690], [220, 690], [220, 590], [300, 492], [255, 492], [275, 300]];
+    const cavD = polyD(cav);
+    const pit = [[214, 704], [334, 704], [334, 862], [214, 862]];
+    const pitD = polyD(pit);
+    o += bricks(c, 'mass', massD, { x: 120, y: 0, w: 290, h: 900 }, { ox: 120, oy: 0, seed: 13, light: false, dark: R ? 0.08 : 0 });
+    // firebrick lining along firebox back, slope and floor
+    o += path('M410 696L214 696L214 586L296 486', R ? 'stroke="#d8b48a" stroke-width="26" fill="none" stroke-linejoin="miter"' : 'stroke="#efd2ad" stroke-width="26" fill="none" stroke-linejoin="miter"');
+    o += path('M410 696L214 696L214 586L296 486', `stroke="${R ? '#7a5b42' : '#c9a47c'}" stroke-width="26" stroke-dasharray="1.4 15" fill="none" stroke-linejoin="miter"`);
+    // flue liner walls (section through clay tiles)
+    o += rect(262, 0, 13, 300, R ? `fill="${c.url('linerSec')}"` : `fill="#e9a27c" ${OUT}`) + rect(345, 0, 13, 300, R ? `fill="${c.url('linerSec')}"` : `fill="#e9a27c" ${OUT}`);
+    let lj = ''; for (let y = 40; y < 300; y += 60) lj += `M262 ${y}H275M345 ${y}H358`;
+    o += path(lj, `stroke="${R ? '#3d1a0c' : INK}" stroke-width="1.5"`);
+    // parging on smoke chamber walls
+    o += path('M275 300L255 492M345 300L368 490', R ? 'stroke="#77716b" stroke-width="10" fill="none"' : 'stroke="#c9c1b9" stroke-width="10" fill="none"');
+    // cavities
+    o += path(cavD, R ? `fill="${c.url('cavity')}"` : 'fill="#f3ebe3"');
+    if (R) o += poly([[220, 590], [300, 492], [368, 498], [410, 520], [410, 690], [220, 690]], `fill="${c.url('glow')}" opacity=".7"`);
+    o += path(pitD, R ? 'fill="#1b1512"' : 'fill="#efe7df"');
+    o += path(cavD + pitD, `fill="none" ${R ? 'stroke="#1a110c" stroke-width="2"' : OUT}`);
+    // ash pile + ash dump door + cleanout door
+    o += path('M218 862 Q 250 836 280 846 T 330 862 Z', R ? 'fill="#9c958d"' : `fill="#cfc8c0" ${OUT}`);
+    o += rect(262, 688, 40, 6, R ? `fill="${c.url('iron')}"` : `fill="#4a4f55" ${OUT}`);
+    o += `<g transform="rotate(-28 262 694)">${rect(262, 690, 40, 4, R ? 'fill="#2b2e32"' : `fill="#6b6662" ${OUT}`)}</g>`;
+    o += rect(112, 812, 10, 40, R ? `fill="${c.url('iron')}"` : `fill="#4a4f55" ${OUT}`);
+    // smoke shelf highlight + damper
+    o += rect(255, 488, 45, 5, R ? 'fill="#57514c"' : `fill="#b8b0a8" ${OUT}`);
+    o += rect(298, 490, 72, 7, R ? `fill="${c.url('iron')}"` : `fill="#45413e" ${OUT}`);
+    o += `<g transform="rotate(-52 304 492)">${rect(304, 488, 58, 6, R ? `fill="${c.url('ironH')}"` : `fill="#6b6662" ${OUT}`)}</g>`;
+    // lintel + face veneer + mantel
+    o += rect(394, 506, 18, 14, R ? `fill="${c.url('iron')}"` : `fill="#4c4844" ${OUT}`);
+    o += rect(410, 330, 10, 176, R ? `fill="${c.url('stone')}"` : `fill="#ddd6cc" ${OUT}`);
+    o += rect(410, 396, 78, 18, R ? `fill="${c.url('wood')}" filter="${c.url('shadow')}"` : `fill="#a26b45" ${OUT}`);
+    o += poly([[420, 414], [452, 414], [420, 448]], R ? `fill="${c.url('wood')}"` : `fill="#8b5a3c" ${OUT}`);
+    // hearth extension
+    o += rect(410, 686, 152, 16, R ? `fill="${c.url('stone')}" filter="${c.url('shadow')}"` : `fill="#ddd6cc" ${OUT}`);
+    // fire + draft
+    o += `<g>${fire(c, 312, 684, 0.62)}</g>`;
+    o += path('M330 610 C 330 560, 300 540, 330 500 S 312 420, 310 300 L 310 30', R ? `stroke="#e9e4de" stroke-width="12" fill="none" opacity=".16" filter="${c.url('blur6')}" class="smoke"` : 'stroke="#9a918a" stroke-width="2" stroke-dasharray="5 6" fill="none" class="smoke-dash"');
+    if (!R) o += path('M302 44 L310 28 L318 44', 'stroke="#9a918a" stroke-width="2" fill="none"');
+    if (!R) o += path(massD, `fill="none" ${OUT}`);
+    o += overlays(c, W, H);
+
+    const hits = {
+      liner: { d: rectD(260, 0, 100, 300) },
+      smoke: { d: polyD([[275, 300], [345, 300], [366, 484], [258, 484]]) },
+      shelf: { d: rectD(250, 482, 48, 16) },
+      damper: { d: rectD(298, 438, 76, 62) },
+      firebrick: { d: polyD([[200, 584], [292, 474], [306, 488], [228, 588], [228, 686], [410, 686], [410, 710], [200, 710]]) },
+      firebox: { d: polyD([[228, 588], [306, 498], [368, 500], [410, 522], [410, 684], [228, 684]]) },
+      mantel: { d: rectD(408, 326, 82, 182) },
+      hearth: { d: rectD(410, 684, 154, 20) },
+      ashdump: { d: rectD(210, 712, 128, 154) + rectD(106, 806, 20, 52) }
+    };
+    return { W, H, svg: o, hits };
+  }
+
+  /* =================================================================
+     SCENE 3 — Fireplace insert (front view, upper cutaway)
+     ================================================================= */
+  function insert(c) {
+    const W = 600, H = 800, R = c.real;
+    let o = defs(c);
+    o += rect(0, 0, 600, 800, `fill="${R ? c.url('wall') : '#faf6f0'}"`);
+    if (R) o += rect(0, 0, 600, 800, `fill="${c.url('roomlight')}"`);
+    o += rect(0, 722, 600, 78, R ? `fill="${c.url('planks')}"` : 'fill="#ecdcc7"');
+    if (!R) o += path('M0 740H600M0 758H600M0 776H600M120 722V740M380 740V758M230 758V776', 'stroke="#d4bda1" stroke-width="1.2"');
+    if (R) o += rect(0, 722, 600, 78, 'fill="#000" opacity=".1"');
+
+    const BW = 32, BH = 11, OY = 0;
+    // cutaway over the mantel, stepped along brick ends
+    const r = rng(77); const left = [], right = [];
+    for (let k = 2; k <= 30; k++) {
+      const y = OY + k * BH;
+      let L = snapDown(110, k, BW, 196), Rr = snapUp(110, k, BW, 404);
+      if (r() < 0.25) L -= BW / 2; if (r() < 0.25) Rr += BW / 2;
+      left.push([L, y], [L, y + BH]); right.unshift([Rr, y + BH], [Rr, y]);
+    }
+    const reveal = left.concat(right); const revealD = polyD(reveal);
+    const breast = { x: 110, y: 0, w: 380, h: 722 };
+    o += bricks(c, 'breast', rectD(breast.x, breast.y, breast.w, breast.h) + revealD, breast, { ox: 110, oy: OY, seed: 31, hue: R ? [18, 30] : undefined, sat: [16, 26], lig: [44, 58], flat: '#d9c4b0', line: '#f3e9df', mortar: '#cfc6ba' });
+    if (!R) o += path(rectD(breast.x, breast.y, breast.w, breast.h), `fill="none" ${OUT}`);
+
+    const rid = c.id('rv');
+    o += `<clipPath id="${rid}"><path d="${revealD}"/></clipPath><g clip-path="url(#${rid})">`;
+    o += rect(150, 0, 300, 360, R ? `fill="${c.url('cavity')}"` : 'fill="#efe5db"');
+    o += bricks(c, 'inner', rectD(150, 0, 300, 360), { x: 150, y: 0, w: 300, h: 360 }, { ox: 126, oy: 5, seed: 33, dark: R ? 0.62 : 0, flat: '#ecd3c6', line: '#f7ebe3', light: false });
+    // old smoke chamber + clay flue (section)
+    o += poly([[252, 150], [348, 150], [410, 296], [190, 296]], R ? `fill="${c.url('parge')}"` : `fill="#c9c1b9" ${OUT}`);
+    o += rect(248, 0, 104, 150, R ? `fill="${c.url('linerSec')}"` : `fill="#e9a27c" ${OUT}`);
+    o += rect(262, 0, 76, 150, R ? 'fill="#1a120e"' : 'fill="#f3ebe3"');
+    let fj = ''; for (let y = 40; y < 150; y += 52) fj += `M248 ${y}H262M338 ${y}H352`;
+    o += path(fj, `stroke="${R ? '#3d1a0c' : INK}" stroke-width="1.4"`);
+    // block-off plate at old damper
+    o += rect(188, 294, 224, 10, R ? `fill="${c.url('alu')}" filter="${c.url('shadow')}"` : `fill="#b9c2ca" ${OUT}`);
+    // stainless flexible liner
+    o += rect(282, 0, 36, 345, R ? `fill="${c.url('steel')}"` : `fill="#dfe4e8" ${OUT}`);
+    o += rect(282, 0, 36, 345, R ? `fill="${c.url('corr')}"` : 'fill="none"');
+    if (!R) { let cd = ''; for (let y = 6; y < 345; y += 8) cd += `M282 ${y}H318`; o += path(cd, 'stroke="#a7b0b8" stroke-width="1"'); }
+    o += '</g>';
+    if (R) o += `<g clip-path="url(#${rid})">${path(revealD, 'fill="none" stroke="#000" stroke-width="16" opacity=".45" filter="' + c.url('blur6') + '"')}${path(revealD, 'fill="none" stroke="#6d6156" stroke-width="6"')}</g>`;
+    else o += path(revealD, `fill="none" ${OUT}`);
+
+    // mantel beam
+    o += rect(92, 334, 416, 30, R ? `fill="${c.url('wood')}" filter="${c.url('shadow')}"` : `fill="#a26b45" ${OUT}`);
+    if (R) o += path('M96 342 Q 250 338 400 344 T 504 342M96 352 Q 220 356 360 350 T 504 354', 'stroke="#3d2412" stroke-width="1" fill="none" opacity=".5"') + rect(92, 334, 416, 3, 'fill="#fff" opacity=".18"');
+
+    // hearth slab
+    o += rect(84, 700, 432, 24, R ? `fill="${c.url('stone')}" filter="${c.url('shadow')}"` : `fill="#ddd6cc" ${OUT}`);
+    // surround panel
+    o += rect(160, 398, 280, 302, R ? `rx="4" fill="${c.url('iron')}" filter="${c.url('shadow')}"` : `rx="4" fill="#3d4146" ${OUT}`);
+    if (R) o += rect(164, 402, 272, 3, 'fill="#fff" opacity=".12"');
+    // insert body
+    o += rect(198, 424, 204, 268, R ? `rx="6" fill="${c.url('ironH')}"` : `rx="6" fill="#55595f" ${OUT}`);
+    // door frame + glass
+    o += rect(216, 440, 168, 172, R ? 'rx="5" fill="#16181b"' : `rx="5" fill="#2e3236" ${OUT}`);
+    const gid = c.id('gl');
+    o += `<clipPath id="${gid}"><rect x="230" y="454" width="140" height="144" rx="3"/></clipPath><g clip-path="url(#${gid})">`;
+    o += rect(230, 454, 140, 144, R ? 'fill="#1a0f0a"' : 'fill="#4a3f3a"');
+    o += poly([[230, 454], [370, 454], [350, 474], [250, 474]], R ? 'fill="#0b0705"' : 'fill="#3a312d"');
+    o += fire(c, 300, 596, 0.6);
+    if (R) o += rect(230, 454, 140, 144, `fill="${c.url('glass')}"`);
+    else o += path('M246 590L290 462M262 590L300 470', 'stroke="#fff" stroke-width="3" opacity=".35"');
+    o += '</g>';
+    // gasket rope
+    o += rect(227, 451, 146, 150, `rx="4" fill="none" stroke="${R ? '#3e3a36' : '#8a837c'}" stroke-width="5"`);
+    o += rect(227, 451, 146, 150, `rx="4" fill="none" stroke="${R ? '#77706a' : '#c9c2ba'}" stroke-width="5" stroke-dasharray="2 2.5"`);
+    // handle
+    o += rect(386, 500, 8, 54, R ? `rx="3" fill="${c.url('steel')}"` : `rx="3" fill="#c7ccd1" ${OUT}`);
+    // blower grille
+    o += rect(222, 624, 156, 54, R ? 'rx="4" fill="#1d1f22"' : `rx="4" fill="#3b3f44" ${OUT}`);
+    let gd = ''; for (let x = 232; x < 372; x += 9) gd += `M${x} 632V670`;
+    o += path(gd, `stroke="${R ? '#4d5258' : '#8b9198'}" stroke-width="3" stroke-linecap="round"`);
+    if (R) o += rect(222, 624, 156, 54, 'rx="4" fill="#ff8a2a" opacity=".06"');
+    o += overlays(c, W, H);
+
+    const hits = {
+      flexliner: { d: rectD(280, 0, 40, 334) },
+      blockoff: { d: rectD(186, 288, 228, 20) },
+      surround: { d: rectD(160, 398, 280, 302) + rectD(198, 424, 204, 268), rule: 'evenodd' },
+      insert: { d: rectD(198, 424, 204, 268) + rectD(216, 440, 168, 172) + rectD(222, 624, 156, 54), rule: 'evenodd' },
+      glass: { d: rectD(232, 456, 136, 140) },
+      gasket: { d: rectD(216, 440, 168, 172) + rectD(232, 456, 136, 140), rule: 'evenodd' },
+      blower: { d: rectD(222, 624, 156, 54) }
+    };
+    return { W, H, svg: o, hits };
+  }
+
+  window.CX_SCENES = {
+    render(type, style) {
+      const c = makeCtx(style === 'real');
+      const fn = { masonry, wood, insert }[type];
+      return fn(c);
+    }
+  };
+})();
+
+</script>
+<script>
+/* Chimney Explorer — application logic (vanilla JS, no build step). */
+(function () {
+  'use strict';
+  const { TYPES, PARTS, SETTINGS } = window.CX_CONTENT;
+  const SCENES = window.CX_SCENES;
+
+  /* ================= icons ================= */
+  const I = {
+    flame: '<svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#e8622c"/><path d="M16 6c1 4 6 6.5 6 12a6 6 0 0 1-12 0c0-3 1.6-4.6 2.8-6 .2 2 1 3 2.2 3.4C14.6 12.5 15.2 9 16 6z" fill="#fff"/></svg>',
+    left: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+    right: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+    close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    lock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    unlock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/></svg>',
+    plus: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    trash: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
+    up: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>',
+    down: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+    photo: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>',
+    play: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#1d1d1f"/></svg>',
+    edit: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    move: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>',
+    tag: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h.01M3 12V3h9l9 9-9 9z"/></svg>',
+    lr: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg>',
+    phone: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+    label: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg>',
+    gear: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
+  };
+
+  /* ================= storage (IndexedDB with in-memory fallback) ================= */
+  const DB_NAME = 'chimney-explorer', DB_VER = 1;
+  let db = null; const memKV = new Map(); const memMedia = new Map(); let memId = 1;
+  function openDB() {
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(DB_NAME, DB_VER);
+        req.onupgradeneeded = () => {
+          const d = req.result;
+          if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
+          if (!d.objectStoreNames.contains('media')) d.createObjectStore('media', { keyPath: 'id', autoIncrement: true }).createIndex('part', 'part');
+        };
+        req.onsuccess = () => { db = req.result; resolve(true); };
+        req.onerror = () => resolve(false);
+        req.onblocked = () => resolve(false);
+      } catch (e) { resolve(false); }
+    });
+  }
+  function tx(store, mode, fn) {
+    return new Promise((resolve, reject) => {
+      const t = db.transaction(store, mode); const s = t.objectStore(store);
+      let out; const r = fn(s); if (r) r.onsuccess = () => { out = r.result; };
+      t.oncomplete = () => resolve(out); t.onerror = () => reject(t.error); t.onabort = () => reject(t.error);
+    });
+  }
+  const store = {
+    async allKV() {
+      if (!db) return new Map(memKV);
+      const keys = await tx('kv', 'readonly', (s) => s.getAllKeys());
+      const vals = await tx('kv', 'readonly', (s) => s.getAll());
+      const m = new Map(); keys.forEach((k, i) => m.set(k, vals[i])); return m;
+    },
+    async set(k, v) { cache.set(k, v); if (!db) { memKV.set(k, v); return; } await tx('kv', 'readwrite', (s) => s.put(v, k)); },
+    async del(k) { cache.delete(k); if (!db) { memKV.delete(k); return; } await tx('kv', 'readwrite', (s) => s.delete(k)); },
+    async media(part) {
+      let list;
+      if (!db) list = [...memMedia.values()].filter((m) => m.part === part);
+      else list = await tx('media', 'readonly', (s) => s.index('part').getAll(part));
+      return list.sort((a, b) => (a.order - b.order) || (a.id - b.id));
+    },
+    async allMedia() { if (!db) return [...memMedia.values()]; return tx('media', 'readonly', (s) => s.getAll()); },
+    async putMedia(m) {
+      if (!db) { if (!m.id) m.id = memId++; memMedia.set(m.id, m); return m.id; }
+      return tx('media', 'readwrite', (s) => s.put(m));
+    },
+    async delMedia(id) { if (!db) { memMedia.delete(id); return; } await tx('media', 'readwrite', (s) => s.delete(id)); },
+    async clearAll() { cache.clear(); if (!db) { memKV.clear(); memMedia.clear(); return; } await tx('kv', 'readwrite', (s) => s.clear()); await tx('media', 'readwrite', (s) => s.clear()); }
+  };
+  let cache = new Map();
+
+  /* ================= state + content accessors ================= */
+  const state = { screen: 'home', type: null, style: 'real', owner: false, labels: true, part: null, moving: false, galMode: 'side', media: [] };
+  const $ = (s, el) => (el || document).querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const paras = (t) => String(t || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join('');
+
+  const settings = () => Object.assign({}, SETTINGS, cache.get('settings') || {});
+  const part = (id) => Object.assign({}, PARTS[id], (cache.get('parts') || {})[id] || {});
+  const typeInfo = (id) => { const t = TYPES.find((x) => x.id === id); const o = (cache.get('types') || {})[id] || {}; return Object.assign({}, t, o); };
+  const hotspotKey = (type, style) => `hotspots:${type}:${style}`;
+  const bgKey = (type, style) => `bg:${type}:${style}`;
+  function prefs() { return cache.get('prefs') || {}; }
+  function savePrefs(p) { store.set('prefs', Object.assign({}, prefs(), p)).catch(() => {}); }
+
+  /* ================= toast + modal helpers ================= */
+  let toastT;
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400); }
+  function modal(html, onMount) {
+    const m = $('#modal');
+    m.innerHTML = `<div class="bg" data-close></div><div class="box" role="dialog" aria-modal="true">${html}</div>`;
+    m.classList.add('show');
+    m.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeModal));
+    if (onMount) onMount(m.querySelector('.box'));
+    const first = m.querySelector('input, textarea'); if (first) setTimeout(() => first.focus(), 60);
+  }
+  function closeModal() { const m = $('#modal'); m.classList.remove('show'); setTimeout(() => { if (!m.classList.contains('show')) m.innerHTML = ''; }, 300); }
+  function confirmBox(title, text, okLabel, danger) {
+    return new Promise((resolve) => {
+      modal(`<h2>${esc(title)}</h2><p class="lead">${esc(text)}</p><div class="actions"><button class="btn" data-no>Cancel</button><button class="btn ${danger ? 'danger' : 'primary'}" data-yes>${esc(okLabel)}</button></div>`, (box) => {
+        box.querySelector('[data-yes]').onclick = () => { closeModal(); resolve(true); };
+        box.querySelector('[data-no]').onclick = () => { closeModal(); resolve(false); };
+        $('#modal .bg').onclick = () => { closeModal(); resolve(false); };
+      });
+    });
+  }
+
+  /* ================= top bar ================= */
+  function renderTop() {
+    const s = settings();
+    $('#brandName').textContent = s.business;
+    document.title = s.business === SETTINGS.business ? 'Chimney Explorer' : s.business;
+    $('#backBtn').hidden = state.screen === 'home';
+    $('#brand').classList.toggle('hide-sm', state.screen !== 'home');
+    const ob = $('#ownerBtn');
+    ob.innerHTML = state.owner ? I.unlock : I.lock;
+    ob.classList.toggle('on', state.owner);
+    ob.setAttribute('aria-label', state.owner ? 'Leave owner mode' : 'Owner mode');
+    ob.title = state.owner ? 'Leave owner mode' : 'Owner mode';
+    $('#ownerBar').hidden = !state.owner;
+    document.body.classList.toggle('owner', state.owner);
+    syncSeg($('#styleSeg'), state.style);
+  }
+  function syncSeg(seg, val) {
+    const btns = [...seg.querySelectorAll('button')];
+    let pill = seg.querySelector('.pill'); if (!pill) { pill = document.createElement('span'); pill.className = 'pill'; seg.prepend(pill); }
+    btns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === val)));
+    const on = btns.find((b) => b.dataset.v === val);
+    if (on) requestAnimationFrame(() => { pill.style.left = on.offsetLeft + 'px'; pill.style.width = on.offsetWidth + 'px'; });
+  }
+
+  /* ================= home ================= */
+  function renderHome() {
+    const s = settings();
+    const cards = TYPES.map((t) => {
+      const ti = typeInfo(t.id);
+      return `<button class="card" data-type="${t.id}">
+        <div class="thumb">${thumbArt(t.id)}</div>
+        <div class="body"><h2>${esc(ti.name)}</h2><p>${esc(ti.desc)}</p><span class="go">Explore ${I.right}</span></div>
+      </button>`;
+    }).join('');
+    $('#home').innerHTML = `<div class="home-inner">
+      <div class="eyebrow">${esc(s.business)}</div>
+      <h1>${esc(s.homeTitle)}</h1>
+      <p class="sub">${esc(s.homeSub)}</p>
+      <div class="cards">${cards}</div>
+      <div class="home-foot">${s.phone ? `<span>${I.phone}</span><a class="cta" style="height:38px" href="tel:${esc(s.phone.replace(/[^+\d]/g, ''))}">${esc(s.phone)}</a>` : ''}</div>
+    </div>`;
+    $('#home').querySelectorAll('.card').forEach((b) => b.addEventListener('click', () => openType(b.dataset.type)));
+  }
+  function thumbArt(type) {
+    const bg = cache.get(bgKey(type, state.style));
+    if (bg && bg.url) return `<img src="${bg.url}" alt="">`;
+    const sc = SCENES.render(type, state.style);
+    // frame the most recognisable part of each scene
+    const vb = { masonry: '60 560 480 400', wood: '150 360 440 380', insert: '70 320 460 420' }[type];
+    return `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${sc.svg}</svg>`;
+  }
+
+  /* ================= explorer ================= */
+  let scene = null, sceneSize = { W: 600, H: 1000 };
+  function openType(type) {
+    state.type = type; state.part = null; state.moving = false;
+    go('explorer');
+    renderExplorer(true);
+  }
+  function currentParts() { return TYPES.find((t) => t.id === state.type).parts; }
+  function hotspots() {
+    const defs = {}; currentParts().forEach((p) => { defs[p.id] = [p.x / sceneSize.W, p.y / sceneSize.H]; });
+    const saved = cache.get(hotspotKey(state.type, state.style)) || {};
+    return Object.assign(defs, saved);
+  }
+
+  function renderExplorer(intro) {
+    const ti = typeInfo(state.type);
+    const bg = cache.get(bgKey(state.type, state.style));
+    $('#exEyebrow').textContent = ti.name;
+    $('#exTitle').textContent = 'Tap any part to explore';
+    // owner tools
+    const tools = $('#exTools');
+    tools.innerHTML = `<button class="chip-btn ${state.labels ? 'on' : ''}" id="labelsBtn" aria-pressed="${state.labels}">${I.label} Labels</button>` +
+      (state.owner ? `<button class="chip-btn ${state.moving ? 'on' : ''}" id="moveBtn">${I.move} ${state.moving ? 'Done moving' : 'Move hotspots'}</button>
+        <button class="chip-btn" id="bgBtn">${I.photo} ${bg ? 'Change image' : 'Use my own image'}</button>
+        ${bg ? '<button class="chip-btn" id="bgReset">Restore drawing</button>' : ''}` : '');
+    $('#labelsBtn').onclick = () => { state.labels = !state.labels; savePrefs({ labels: state.labels }); renderExplorer(); };
+    if (state.owner) {
+      $('#moveBtn').onclick = () => { state.moving = !state.moving; if (state.moving) toast('Drag the dots to line them up. Changes save automatically.'); renderExplorer(); };
+      $('#bgBtn').onclick = () => pickFile('image/*', false, (files) => setBackground(files[0]));
+      const r = $('#bgReset'); if (r) r.onclick = async () => { if (await confirmBox('Restore the drawing?', 'Your uploaded image for this view will be removed. Hotspot positions you set are kept.', 'Restore')) { await store.del(bgKey(state.type, state.style)); renderExplorer(); renderHome(); } };
+    }
+
+    const art = $('#art');
+    if (bg && bg.url) {
+      sceneSize = { W: bg.w, H: bg.h }; scene = null;
+      art.innerHTML = `<img src="${bg.url}" alt="${esc(ti.name)}">`;
+    } else {
+      scene = SCENES.render(state.type, state.style);
+      sceneSize = { W: scene.W, H: scene.H };
+      const hits = currentParts().map((p) => { const h = scene.hits[p.id]; return h ? `<path class="hit" data-part="${p.id}" d="${h.d}" fill-rule="${h.rule || 'nonzero'}"><title>${esc(part(p.id).name)}</title></path>` : ''; }).join('');
+      art.innerHTML = `<svg viewBox="0 0 ${scene.W} ${scene.H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(ti.name)} diagram">${scene.svg}<g class="hits">${hits}</g></svg>`;
+    }
+    // hotspots
+    const hs = hotspots();
+    $('#hotspots').innerHTML = currentParts().map((p) => {
+      const pos = hs[p.id]; const nm = part(p.id).name;
+      const side = pos[0] > 0.8 ? 'l' : pos[0] < 0.2 ? 'r' : p.side;
+      return `<button class="hs" data-part="${p.id}" style="left:${pos[0] * 100}%;top:${pos[1] * 100}%" aria-label="${esc(nm)}"><span class="dot"></span><span class="lbl ${side}">${esc(nm)}</span></button>`;
+    }).join('');
+    const stage = $('#stage');
+    stage.classList.toggle('no-labels', !state.labels);
+    stage.classList.toggle('moving', state.moving);
+    // chips
+    $('#chips').innerHTML = currentParts().map((p) => `<button data-part="${p.id}">${esc(part(p.id).name)}</button>`).join('');
+    fitStage();
+    markActive();
+    if (intro && !scene) intro = false;
+    if (intro) {
+      const hitsEls = [...document.querySelectorAll('#art .hit')];
+      hitsEls.forEach((h, i) => setTimeout(() => { h.classList.add('intro'); setTimeout(() => h.classList.remove('intro'), 1150); }, 350 + i * 110));
+    }
+  }
+
+  function fitStage() {
+    const wrap = $('#stageWrap'), stage = $('#stage');
+    if (!wrap || state.screen !== 'explorer') return;
+    const r = wrap.getBoundingClientRect();
+    const pad = window.innerWidth < 560 ? 16 : 32;
+    const ar = sceneSize.W / sceneSize.H;
+    let w = r.width - pad * 2, h = r.height - 8;
+    if (w <= 0 || h <= 0) return;
+    if (w / h > ar) w = h * ar; else h = w / ar;
+    stage.style.width = Math.floor(w) + 'px'; stage.style.height = Math.floor(h) + 'px';
+  }
+
+  function markActive() {
+    document.querySelectorAll('#stage [data-part], #chips [data-part]').forEach((el) => el.classList.toggle('on', el.dataset.part === state.part));
+    const chip = $(`#chips [data-part="${state.part}"]`);
+    if (chip) chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+
+  async function setBackground(file) {
+    if (!file) return;
+    try {
+      const blob = await shrinkImage(file, 2600);
+      const url = URL.createObjectURL(blob);
+      const dim = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = rej; im.src = url; });
+      await store.set(bgKey(state.type, state.style), { blob, w: dim.w, h: dim.h });
+      cache.get(bgKey(state.type, state.style)).url = url;
+      state.moving = true;
+      renderExplorer(); renderHome();
+      toast('Image saved. Now drag each dot onto its part.');
+    } catch (e) { toast('That image could not be opened. Try a JPG or PNG.'); }
+  }
+
+  /* hotspot dragging (owner) */
+  let drag = null;
+  function onHsDown(e) {
+    const b = e.target.closest('.hs'); if (!b || !state.moving) return;
+    e.preventDefault(); b.setPointerCapture(e.pointerId);
+    drag = { b, id: b.dataset.part, rect: $('#stage').getBoundingClientRect() };
+  }
+  function onHsMove(e) {
+    if (!drag) return;
+    const x = Math.min(1, Math.max(0, (e.clientX - drag.rect.left) / drag.rect.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - drag.rect.top) / drag.rect.height));
+    drag.b.style.left = x * 100 + '%'; drag.b.style.top = y * 100 + '%'; drag.pos = [x, y];
+  }
+  async function onHsUp() {
+    if (!drag) return; const d = drag; drag = null;
+    if (!d.pos) return;
+    const k = hotspotKey(state.type, state.style);
+    const saved = Object.assign({}, cache.get(k) || {}); saved[d.id] = [Math.round(d.pos[0] * 10000) / 10000, Math.round(d.pos[1] * 10000) / 10000];
+    await store.set(k, saved);
+  }
+
+  /* ================= part sheet ================= */
+  async function openPart(id) {
+    if (state.moving) return;
+    state.part = id; markActive();
+    state.media = await store.media(id);
+    renderSheet();
+    $('#sheet').classList.add('show'); $('#scrim').classList.add('show');
+    $('#explorer').classList.add('panel-open');
+    $('#sheetScroll').scrollTop = 0;
+    setTimeout(fitStage, 520);
+  }
+  function closePart() {
+    state.part = null; markActive();
+    $('#sheet').classList.remove('show'); $('#scrim').classList.remove('show');
+    $('#explorer').classList.remove('panel-open');
+    $('#sheet').style.transform = '';
+    setTimeout(fitStage, 520);
+  }
+  function renderSheet() {
+    const id = state.part; if (!id) return;
+    const p = part(id); const s = settings();
+    const list = currentParts(); const idx = list.findIndex((x) => x.id === id);
+    const prev = list[(idx - 1 + list.length) % list.length], next = list[(idx + 1) % list.length];
+    const probs = (p.problems || []).filter(Boolean).map((x) => `<li>${esc(x)}</li>`).join('');
+    $('#sheetScroll').innerHTML = `
+      <div class="top"><span class="eyebrow">Part ${idx + 1} of ${list.length}</span><button class="close" id="sheetClose" aria-label="Close">${I.close}</button></div>
+      <h2 id="sheetTitle">${esc(p.name)}</h2>
+      ${p.tagline ? `<p class="tagline">${esc(p.tagline)}</p>` : ''}
+      ${state.owner ? `<div class="owner-row"><button class="chip-btn dark" id="editText">${I.edit} Edit text</button></div>` : ''}
+      <section class="sec"><h3>What it is</h3>${paras(p.what)}</section>
+      ${probs ? `<section class="sec"><h3>Common problems</h3><ul class="problems">${probs}</ul></section>` : ''}
+      <section class="sec service"><h3>What we do</h3>${paras(p.service)}
+        ${s.phone ? `<a class="cta" href="tel:${esc(s.phone.replace(/[^+\d]/g, ''))}">${I.phone} Call ${esc(s.phone)}</a>` : ''}</section>
+      <section class="sec" id="gallery">${galleryHTML()}</section>
+      <div class="sheet-nav"><button id="prevPart">${I.left}<span>${esc(part(prev.id).name)}</span></button><button id="nextPart"><span>${esc(part(next.id).name)}</span>${I.right}</button></div>`;
+    $('#sheetClose').onclick = closePart;
+    $('#prevPart').onclick = () => openPart(prev.id);
+    $('#nextPart').onclick = () => openPart(next.id);
+    const et = $('#editText'); if (et) et.onclick = () => editPartText(id);
+    bindGallery();
+  }
+
+  /* ================= gallery ================= */
+  const urlCache = new Map();
+  function mediaURL(m) { if (!urlCache.has(m.id)) urlCache.set(m.id, URL.createObjectURL(m.blob)); return urlCache.get(m.id); }
+  function mediaTile(m, extra) {
+    const u = mediaURL(m); const isV = m.kind === 'video';
+    return `<button class="media" data-open="${m.id}" aria-label="Open ${esc(m.label)} ${isV ? 'video' : 'photo'}">
+      ${isV ? `<video src="${u}#t=0.1" muted playsinline preload="metadata"></video><span class="play"><i>${I.play}</i></span>` : `<img src="${u}" alt="${esc(m.caption || m.label)}" loading="lazy">`}
+      ${extra === false ? '' : `<span class="tag ${m.label}">${m.label === 'after' ? 'After' : 'Before'}</span>`}</button>`;
+  }
+  function pairsOf(list) {
+    const b = list.filter((m) => m.label !== 'after'), a = list.filter((m) => m.label === 'after');
+    const n = Math.min(b.length, a.length); const pairs = [];
+    for (let i = 0; i < n; i++) pairs.push([b[i], a[i]]);
+    return { pairs, singles: b.slice(n).concat(a.slice(n)) };
+  }
+  function galleryHTML() {
+    const list = state.media;
+    if (state.owner) return ownerGalleryHTML(list);
+    if (!list.length) {
+      return `<div class="gal-head"><h3>Before &amp; After</h3></div>
+        <div class="empty"><div class="ic">${I.photo}</div><b>No examples yet</b><span>Photos and videos from real jobs will appear here.</span></div>`;
+    }
+    const { pairs, singles } = pairsOf(list);
+    const canSlide = pairs.some(([b, a]) => b.kind === 'image' && a.kind === 'image');
+    const mode = canSlide ? state.galMode : 'side';
+    let h = `<div class="gal-head"><h3>Before &amp; After</h3>${canSlide ? `<div class="seg sm" id="galSeg"><button data-v="side">Side by side</button><button data-v="slider">Slider</button></div>` : ''}</div>`;
+    if (pairs.length) {
+      h += '<div class="pairs">' + pairs.map(([b, a]) => {
+        const cap = [b.caption, a.caption].filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(' · ');
+        if (mode === 'slider' && b.kind === 'image' && a.kind === 'image') {
+          return `<div class="pair"><div class="ba" style="--pos:50%"><img src="${mediaURL(a)}" alt="After"><img class="b" src="${mediaURL(b)}" alt="Before"><span class="tag">Before</span><span class="tag after">After</span><span class="bar"></span><span class="knob">${I.lr}</span><input type="range" min="0" max="100" value="50" aria-label="Compare before and after"></div>${cap ? `<div class="caption">${esc(cap)}</div>` : ''}</div>`;
+        }
+        return `<div class="pair"><div class="cols">${mediaTile(b)}${mediaTile(a)}</div>${cap ? `<div class="caption">${esc(cap)}</div>` : ''}</div>`;
+      }).join('') + '</div>';
+    }
+    if (singles.length) h += `<div class="singles">${singles.map((m) => `<div>${mediaTile(m)}${m.caption ? `<div class="caption">${esc(m.caption)}</div>` : ''}</div>`).join('')}</div>`;
+    return h;
+  }
+  function ownerGalleryHTML(list) {
+    const items = list.map((m, i) => `<div class="ed-item" data-id="${m.id}">
+      ${mediaTile(m)}
+      <div class="fields">
+        <div class="row"><div class="seg sm" data-labelseg="${m.id}"><button data-v="before">Before</button><button data-v="after">After</button></div>
+          <span style="flex:1"></span>
+          <button class="mini" data-up="${m.id}" ${i === 0 ? 'disabled' : ''} aria-label="Move up">${I.up}</button>
+          <button class="mini" data-down="${m.id}" ${i === list.length - 1 ? 'disabled' : ''} aria-label="Move down">${I.down}</button>
+          <button class="mini danger" data-del="${m.id}" aria-label="Delete">${I.trash}</button></div>
+        <input type="text" id="cap-${m.id}" data-cap="${m.id}" value="${esc(m.caption || '')}" placeholder="Add a caption, e.g. Crown rebuilt, Oak Street">
+      </div></div>`).join('');
+    return `<div class="gal-head"><h3>Before &amp; After</h3><span class="hint" style="margin:0">${list.length} item${list.length === 1 ? '' : 's'}</span></div>
+      ${list.length ? `<div class="ed-list">${items}</div>` : `<div class="empty"><div class="ic">${I.photo}</div><b>No examples yet</b><span>Add photos or videos from your own jobs.</span></div>`}
+      <div class="add-row"><button class="add-btn" data-add="before">${I.plus} Add Before</button><button class="add-btn" data-add="after">${I.plus} Add After</button></div>
+      <p class="hint">Before and After items are paired in order: the first Before goes with the first After. Clients see them side by side or with a slider.</p>`;
+  }
+  function bindGallery() {
+    const g = $('#gallery'); if (!g) return;
+    const seg = $('#galSeg');
+    if (seg) { syncSeg(seg, state.galMode); seg.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; state.galMode = b.dataset.v; savePrefs({ galMode: state.galMode }); refreshGallery(); }; }
+    g.querySelectorAll('.ba input').forEach((inp) => { inp.oninput = () => inp.parentElement.style.setProperty('--pos', inp.value + '%'); });
+    g.querySelectorAll('[data-open]').forEach((b) => b.onclick = () => openLightbox(+b.dataset.open));
+    if (!state.owner) return;
+    g.querySelectorAll('[data-labelseg]').forEach((sg) => {
+      const m = state.media.find((x) => x.id === +sg.dataset.labelseg);
+      syncSeg(sg, m.label);
+      sg.onclick = async (e) => { const b = e.target.closest('button'); if (!b) return; m.label = b.dataset.v; await store.putMedia(m); syncSeg(sg, m.label); const tg = sg.closest('.ed-item').querySelector('.tag'); tg.className = 'tag ' + m.label; tg.textContent = m.label === 'after' ? 'After' : 'Before'; };
+    });
+    g.querySelectorAll('[data-cap]').forEach((inp) => {
+      inp.onchange = async () => { const m = state.media.find((x) => x.id === +inp.dataset.cap); m.caption = inp.value.trim(); await store.putMedia(m); toast('Caption saved'); };
+    });
+    g.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
+      if (!(await confirmBox('Delete this item?', 'It will be removed from this gallery on this device.', 'Delete', true))) return;
+      const id = +b.dataset.del; await store.delMedia(id);
+      if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); }
+      state.media = state.media.filter((m) => m.id !== id); await renumber(); refreshGallery(); toast('Deleted');
+    });
+    const move = async (id, dir) => {
+      const i = state.media.findIndex((m) => m.id === id); const j = i + dir; if (j < 0 || j >= state.media.length) return;
+      [state.media[i], state.media[j]] = [state.media[j], state.media[i]]; await renumber(); refreshGallery();
+    };
+    g.querySelectorAll('[data-up]').forEach((b) => b.onclick = () => move(+b.dataset.up, -1));
+    g.querySelectorAll('[data-down]').forEach((b) => b.onclick = () => move(+b.dataset.down, 1));
+    g.querySelectorAll('[data-add]').forEach((b) => b.onclick = () => pickFile('image/*,video/*', true, (files) => addMedia(files, b.dataset.add)));
+  }
+  async function renumber() { for (let i = 0; i < state.media.length; i++) { if (state.media[i].order !== i) { state.media[i].order = i; await store.putMedia(state.media[i]); } } }
+  function refreshGallery() { const g = $('#gallery'); if (g) { g.innerHTML = galleryHTML(); bindGallery(); } }
+
+  async function addMedia(files, label) {
+    if (!files || !files.length) return;
+    toast(files.length > 1 ? `Adding ${files.length} items…` : 'Adding…');
+    let added = 0;
+    for (const file of files) {
+      const isV = file.type.startsWith('video/'); const isI = file.type.startsWith('image/');
+      if (!isV && !isI) continue;
+      try {
+        const blob = isI ? await shrinkImage(file, 2200) : file;
+        const m = { part: state.part, label, caption: '', kind: isV ? 'video' : 'image', mime: blob.type || file.type, blob, order: state.media.length, created: Date.now() };
+        m.id = await store.putMedia(m); state.media.push(m); added++;
+      } catch (e) { toast('Could not save ' + file.name + '. The device may be out of storage.'); }
+    }
+    refreshGallery();
+    if (added) toast(`${added} ${label === 'after' ? 'After' : 'Before'} item${added > 1 ? 's' : ''} added`);
+  }
+  function pickFile(accept, multiple, cb) {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = accept; inp.multiple = !!multiple;
+    inp.style.display = 'none'; document.body.appendChild(inp);
+    inp.onchange = () => { cb([...inp.files]); inp.remove(); };
+    inp.click();
+  }
+  async function shrinkImage(file, max) {
+    if (!/^image\/(jpeg|png|webp|heic|heif)/.test(file.type)) return file;
+    try {
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      if (s === 1 && file.size < 1.8e6) return file;
+      const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * s); cv.height = Math.round(bmp.height * s);
+      cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+      const out = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.86));
+      return out || file;
+    } catch (e) { return file; }
+  }
+
+  /* lightbox */
+  let lbIndex = 0;
+  function openLightbox(id) { lbIndex = state.media.findIndex((m) => m.id === id); if (lbIndex < 0) return; renderLightbox(); $('#lightbox').classList.add('show'); }
+  function renderLightbox() {
+    const m = state.media[lbIndex]; const u = mediaURL(m); const many = state.media.length > 1;
+    $('#lightbox').innerHTML = `<div class="lb-top"><span class="tag" style="position:static" >${m.label === 'after' ? 'After' : 'Before'} · ${lbIndex + 1} of ${state.media.length}</span><button class="icon-btn" id="lbClose" aria-label="Close">${I.close}</button></div>
+      <div class="lb-main">${m.kind === 'video' ? `<video src="${u}" controls autoplay playsinline></video>` : `<img src="${u}" alt="${esc(m.caption || '')}">`}
+      ${many ? `<button class="icon-btn nav prev" id="lbPrev" aria-label="Previous">${I.left}</button><button class="icon-btn nav next" id="lbNext" aria-label="Next">${I.right}</button>` : ''}</div>
+      <div class="lb-cap">${esc(m.caption || '')}</div>`;
+    $('#lbClose').onclick = closeLightbox;
+    if (many) { $('#lbPrev').onclick = () => { lbIndex = (lbIndex - 1 + state.media.length) % state.media.length; renderLightbox(); }; $('#lbNext').onclick = () => { lbIndex = (lbIndex + 1) % state.media.length; renderLightbox(); }; }
+  }
+  function closeLightbox() { const lb = $('#lightbox'); lb.classList.remove('show'); setTimeout(() => { if (!lb.classList.contains('show')) lb.innerHTML = ''; }, 300); }
+
+  /* ================= owner: text editing ================= */
+  function editPartText(id) {
+    const p = part(id);
+    modal(`<h2>Edit “${esc(p.name)}”</h2><p class="lead">Changes are saved on this device and appear everywhere this part is shown.</p>
+      <form class="form" id="partForm">
+        <label>Part name<input id="f-name" value="${esc(p.name)}" required></label>
+        <label>Short description<input id="f-tag" value="${esc(p.tagline || '')}"></label>
+        <label>What it is <small>Leave a blank line between paragraphs.</small><textarea id="f-what" rows="6">${esc(p.what || '')}</textarea></label>
+        <label>Common problems <small>One per line.</small><textarea id="f-probs" rows="5">${esc((p.problems || []).join('\n'))}</textarea></label>
+        <label>What we do<textarea id="f-service" rows="5">${esc(p.service || '')}</textarea></label>
+        <div class="actions"><button type="button" class="btn left" id="f-reset">Reset to default</button><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Save</button></div>
+      </form>`, (box) => {
+      box.querySelector('#partForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const all = Object.assign({}, cache.get('parts') || {});
+        all[id] = { name: $('#f-name').value.trim() || PARTS[id].name, tagline: $('#f-tag').value.trim(), what: $('#f-what').value.trim(), problems: $('#f-probs').value.split('\n').map((x) => x.trim()).filter(Boolean), service: $('#f-service').value.trim() };
+        await store.set('parts', all); closeModal(); refreshAfterEdit(); toast('Saved');
+      };
+      box.querySelector('#f-reset').onclick = async () => {
+        const all = Object.assign({}, cache.get('parts') || {}); delete all[id];
+        await store.set('parts', all); closeModal(); refreshAfterEdit(); toast('Restored the original text');
+      };
+    });
+  }
+  function refreshAfterEdit() { renderTop(); renderHome(); if (state.screen === 'explorer') { renderExplorer(); if (state.part) renderSheet(); } }
+
+  /* ================= owner: settings ================= */
+  function openSettings() {
+    const s = settings();
+    const typeFields = TYPES.map((t) => { const ti = typeInfo(t.id); return `<label>${esc(t.name)} — title<input id="t-${t.id}-name" value="${esc(ti.name)}"></label><label>Description<textarea id="t-${t.id}-desc" rows="2">${esc(ti.desc)}</textarea></label>`; }).join('');
+    modal(`<h2>Settings</h2><p class="lead">Everything here is saved on this device.</p>
+      <form class="form" id="setForm">
+        <label>Business name<input id="s-biz" value="${esc(s.business)}"></label>
+        <label>Phone number <small>Shows a “Call” button on every part. Leave empty to hide it.</small><input id="s-phone" type="tel" value="${esc(s.phone)}" placeholder="(555) 123-4567"></label>
+        <label>Home headline<input id="s-title" value="${esc(s.homeTitle)}"></label>
+        <label>Home subtitle<input id="s-sub" value="${esc(s.homeSub)}"></label>
+        <fieldset><legend>Fireplace types</legend>${typeFields}</fieldset>
+        <fieldset><legend>Owner PIN</legend><label>PIN to unlock owner mode <small>4–8 digits. Leave empty to unlock with a single tap.</small><input id="s-pin" inputmode="numeric" pattern="[0-9]{4,8}" value="${esc(cache.get('pin') || '')}" placeholder="No PIN"></label></fieldset>
+        <fieldset><legend>Backup</legend><p class="lead" style="margin:0">Your photos, videos and text live in this browser. Save a backup file now and then, or to move everything to another device.</p>
+          <div class="actions" style="justify-content:flex-start;margin-top:4px"><button type="button" class="btn" id="s-export">Download backup</button><button type="button" class="btn" id="s-import">Restore from backup</button></div>
+          <p class="hint" id="s-usage"></p></fieldset>
+        <fieldset><legend>Reset</legend><div class="actions" style="justify-content:flex-start;margin-top:0"><button type="button" class="btn danger" id="s-resetText">Reset all text to defaults</button></div></fieldset>
+        <div class="actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Save</button></div>
+      </form>`, (box) => {
+      if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then((e) => { const u = $('#s-usage'); if (u) u.textContent = `Using ${(e.usage / 1048576).toFixed(1)} MB of storage on this device.`; }).catch(() => {});
+      box.querySelector('#setForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const pin = $('#s-pin').value.trim();
+        if (pin && !/^\d{4,8}$/.test(pin)) { toast('The PIN must be 4 to 8 digits.'); return; }
+        await store.set('settings', { business: $('#s-biz').value.trim() || SETTINGS.business, phone: $('#s-phone').value.trim(), homeTitle: $('#s-title').value.trim() || SETTINGS.homeTitle, homeSub: $('#s-sub').value.trim() });
+        const types = {}; TYPES.forEach((t) => { types[t.id] = { name: $(`#t-${t.id}-name`).value.trim() || t.name, desc: $(`#t-${t.id}-desc`).value.trim() }; });
+        await store.set('types', types);
+        if (pin) await store.set('pin', pin); else await store.del('pin');
+        closeModal(); refreshAfterEdit(); toast('Settings saved');
+      };
+      box.querySelector('#s-export').onclick = exportBackup;
+      box.querySelector('#s-import').onclick = () => pickFile('application/json,.json', false, (f) => importBackup(f[0]));
+      box.querySelector('#s-resetText').onclick = async () => {
+        if (!(await confirmBox('Reset all text?', 'Part descriptions, type names and home text go back to the originals. Photos, videos and hotspots are kept.', 'Reset text', true))) return;
+        await store.del('parts'); await store.del('types'); await store.del('settings'); refreshAfterEdit(); toast('Text reset');
+      };
+    });
+  }
+  const blobToData = (b) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+  const dataToBlob = async (d) => (await fetch(d)).blob();
+  async function exportBackup() {
+    try {
+      toast('Preparing backup…');
+      const kv = {};
+      for (const [k, v] of cache) {
+        if (k.startsWith('bg:')) kv[k] = { w: v.w, h: v.h, data: await blobToData(v.blob) };
+        else kv[k] = v;
+      }
+      const media = [];
+      for (const m of await store.allMedia()) media.push({ part: m.part, label: m.label, caption: m.caption, kind: m.kind, mime: m.mime, order: m.order, created: m.created, data: await blobToData(m.blob) });
+      const blob = new Blob([JSON.stringify({ app: 'chimney-explorer', version: 1, exported: new Date().toISOString(), kv, media })], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chimney-explorer-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    } catch (e) { toast('The backup could not be created.'); }
+  }
+  async function importBackup(file) {
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (data.app !== 'chimney-explorer') throw new Error('bad');
+      if (!(await confirmBox('Restore this backup?', 'Everything currently saved in the app on this device will be replaced by the backup.', 'Restore', true))) return;
+      await store.clearAll();
+      for (const k of Object.keys(data.kv || {})) {
+        const v = data.kv[k];
+        if (k.startsWith('bg:')) { const blob = await dataToBlob(v.data); await store.set(k, { blob, w: v.w, h: v.h }); cache.get(k).url = URL.createObjectURL(blob); }
+        else await store.set(k, v);
+      }
+      for (const m of data.media || []) { const blob = await dataToBlob(m.data); delete m.data; m.blob = blob; await store.putMedia(m); }
+      closeModal(); urlCache.clear(); refreshAfterEdit(); if (state.part) { state.media = await store.media(state.part); renderSheet(); }
+      toast('Backup restored');
+    } catch (e) { toast('That file is not a Chimney Explorer backup.'); }
+  }
+
+  /* ================= owner mode toggle ================= */
+  function toggleOwner() {
+    if (state.owner) { setOwner(false); return; }
+    const pin = cache.get('pin');
+    if (!pin) { setOwner(true); return; }
+    modal(`<h2>Owner mode</h2><p class="lead">Enter your PIN to edit text, photos and videos.</p>
+      <form class="form" id="pinForm"><input class="pin-input" id="pinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" aria-label="PIN"><div class="err" id="pinErr"></div>
+      <div class="actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary">Unlock</button></div></form>`, (box) => {
+      box.querySelector('#pinForm').onsubmit = (e) => { e.preventDefault(); if ($('#pinIn').value === pin) { closeModal(); setOwner(true); } else { $('#pinErr').textContent = 'That PIN is not correct.'; $('#pinIn').value = ''; } };
+    });
+  }
+  function setOwner(on) {
+    state.owner = on; if (!on) state.moving = false;
+    renderTop();
+    if (state.screen === 'explorer') renderExplorer();
+    if (state.part) renderSheet();
+    toast(on ? 'Owner mode on. Editing controls are visible.' : 'Client view. Editing controls are hidden.');
+  }
+
+  /* ================= navigation ================= */
+  function go(screen) {
+    state.screen = screen;
+    $('#home').setAttribute('aria-hidden', String(screen !== 'home'));
+    $('#explorer').setAttribute('aria-hidden', String(screen !== 'explorer'));
+    if (screen === 'home') { closePart(); renderHome(); }
+    renderTop();
+    const h = screen === 'home' ? '' : '#' + state.type;
+    if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search);
+  }
+
+  /* ================= sheet swipe-to-close (mobile) ================= */
+  function bindSheetDrag() {
+    const sheet = $('#sheet'), grip = $('#sheetGrip'); let y0 = null, dy = 0;
+    grip.addEventListener('pointerdown', (e) => { y0 = e.clientY; dy = 0; grip.setPointerCapture(e.pointerId); sheet.style.transition = 'none'; });
+    grip.addEventListener('pointermove', (e) => { if (y0 == null) return; dy = Math.max(0, e.clientY - y0); sheet.style.transform = `translateY(${dy}px)`; });
+    const end = () => { if (y0 == null) return; y0 = null; sheet.style.transition = ''; sheet.style.transform = ''; if (dy > 90) closePart(); };
+    grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
+  }
+
+  /* ================= boot ================= */
+  async function boot() {
+    const ok = await openDB();
+    try { cache = await store.allKV(); } catch (e) { cache = new Map(); }
+    for (const [k, v] of cache) if (k.startsWith('bg:') && v && v.blob) v.url = URL.createObjectURL(v.blob);
+    if (!ok) setTimeout(() => toast('Storage is unavailable here, so uploads will not be kept.'), 800);
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* optional */ }
+    const p = prefs();
+    if (p.style) state.style = p.style; if (p.labels === false) state.labels = false; if (p.galMode) state.galMode = p.galMode;
+
+    $('#brand').insertAdjacentHTML('afterbegin', I.flame);
+    $('#backBtn').innerHTML = I.left + '<span>Types</span>';
+    $('#backBtn').onclick = () => go('home');
+    $('#ownerBtn').onclick = toggleOwner;
+    $('#ownerSettings').innerHTML = I.gear + ' Settings';
+    $('#ownerSettings').onclick = openSettings;
+    $('#ownerDone').onclick = () => setOwner(false);
+    $('#styleSeg').onclick = (e) => {
+      const b = e.target.closest('button'); if (!b || b.dataset.v === state.style) return;
+      state.style = b.dataset.v; savePrefs({ style: state.style }); renderTop(); renderHome();
+      if (state.screen === 'explorer') { renderExplorer(); }
+    };
+    $('#scrim').onclick = closePart;
+    // stage & chips interactions (delegated)
+    $('#stage').addEventListener('click', (e) => { const t = e.target.closest('[data-part]'); if (t && !state.moving) openPart(t.dataset.part); });
+    $('#chips').addEventListener('click', (e) => { const t = e.target.closest('[data-part]'); if (t) { if (state.moving) { state.moving = false; renderExplorer(); } openPart(t.dataset.part); } });
+    $('#hotspots').addEventListener('pointerdown', onHsDown);
+    $('#hotspots').addEventListener('pointermove', onHsMove);
+    $('#hotspots').addEventListener('pointerup', onHsUp);
+    $('#hotspots').addEventListener('pointercancel', onHsUp);
+    bindSheetDrag();
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { if ($('#lightbox').classList.contains('show')) closeLightbox(); else if ($('#modal').classList.contains('show')) closeModal(); else if (state.part) closePart(); else if (state.screen === 'explorer') go('home'); }
+      if (state.part && !$('#modal').classList.contains('show') && !$('#lightbox').classList.contains('show') && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
+        if (e.key === 'ArrowRight') $('#nextPart').click(); if (e.key === 'ArrowLeft') $('#prevPart').click();
+      }
+    });
+    window.addEventListener('resize', fitStage);
+    window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (TYPES.some((x) => x.id === t)) { if (t !== state.type || state.screen !== 'explorer') openType(t); } else if (state.screen !== 'home') go('home'); });
+    if (window.ResizeObserver) new ResizeObserver(fitStage).observe($('#stageWrap'));
+
+    renderTop(); renderHome();
+    const h = location.hash.slice(1);
+    if (TYPES.some((t) => t.id === h)) openType(h); else go('home');
+
+    // offline support when served from a web host
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/claude/.test(location.hostname)) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  }
+  boot();
+})();
+
+</script>
+</body>
+</html>
