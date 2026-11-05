@@ -465,5 +465,65 @@
    0.73
   ],
   "caption": "Refaced in smooth plaster with a new raised hearth"
+ },
+ {
+  "id": "ref-damper",
+  "part": "damper",
+  "label": "reference",
+  "src": "ref-damper-8.jpg",
+  "caption": "A cast-iron throat damper in the closed position.",
+  "credit": {
+   "by": "jhritz",
+   "license": "CC BY 2.0",
+   "link": "https://www.flickr.com/photos/29818924@N00/3146204410"
+  }
+ },
+ {
+  "id": "ref-insert",
+  "part": "insert",
+  "label": "reference",
+  "src": "ref-insert-1.jpg",
+  "caption": "A fireplace insert fitted neatly into an existing fireplace, with a trim surround.",
+  "credit": {
+   "by": "jessicafm",
+   "license": "CC BY 2.0",
+   "link": "https://www.flickr.com/photos/94953676@N00/309714604"
+  }
+ },
+ {
+  "id": "ref-liner",
+  "part": "liner",
+  "label": "reference",
+  "src": "ref-liner-12.jpg",
+  "caption": "Inside a clay flue tile: a smooth, round channel for smoke.",
+  "credit": {
+   "by": "Clint__Budd",
+   "license": "CC BY 2.0",
+   "link": "https://www.flickr.com/photos/58827557@N06/9599270916"
+  }
+ },
+ {
+  "id": "ref-hearth",
+  "part": "hearth",
+  "label": "reference",
+  "src": "ref-hearth-1.jpg",
+  "caption": "A slate hearth extending in front of the fireplace opening.",
+  "credit": {
+   "by": "Wonderlane",
+   "license": "CC0 1.0",
+   "link": "https://www.flickr.com/photos/71401718@N00/2090244608"
+  }
+ },
+ {
+  "id": "ref-pipe",
+  "part": "pipe",
+  "label": "reference",
+  "src": "ref-pipe-1.jpg",
+  "caption": "A listed stainless steel chimney pipe running through the roof.",
+  "credit": {
+   "by": "StockyPics",
+   "license": "CC0 1.0",
+   "link": "https://www.flickr.com/photos/135371437@N04/23594341745"
+  }
  }
 ]

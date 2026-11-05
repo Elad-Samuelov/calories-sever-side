@@ -282,10 +282,15 @@
   }
 
   /* ================= part sheet ================= */
+  async function loadPartMedia(id) {
+    const all = await store.media(id);
+    state.refs = all.filter((m) => m.label === 'reference');
+    state.media = all.filter((m) => m.label !== 'reference');
+  }
   async function openPart(id) {
     if (state.moving) return;
     state.part = id; markActive();
-    state.media = await store.media(id);
+    await loadPartMedia(id);
     renderSheet();
     $('#sheet').classList.add('show'); $('#scrim').classList.add('show');
     $('#explorer').classList.add('panel-open');
@@ -314,6 +319,7 @@
       ${probs ? `<section class="sec"><h3>Common problems</h3><ul class="problems">${probs}</ul></section>` : ''}
       <section class="sec service"><h3>What we do</h3>${paras(p.service)}
         ${s.phone ? `<a class="cta" href="tel:${esc(s.phone.replace(/[^+\d]/g, ''))}">${I.phone} Call ${esc(s.phone)}</a>` : ''}</section>
+      ${refsHTML()}
       <section class="sec" id="gallery">${galleryHTML()}</section>
       <div class="sheet-nav"><button id="prevPart">${I.left}<span>${esc(part(prev.id).name)}</span></button><button id="nextPart"><span>${esc(part(next.id).name)}</span>${I.right}</button></div>`;
     $('#sheetClose').onclick = closePart;
@@ -321,6 +327,12 @@
     $('#nextPart').onclick = () => openPart(next.id);
     const et = $('#editText'); if (et) et.onclick = () => editPartText(id);
     bindGallery();
+    document.querySelectorAll('[data-refdel]').forEach((b) => b.onclick = async () => {
+      if (!(await confirmBox('Remove this example photo?', 'It will no longer show for this part on this device.', 'Remove', true))) return;
+      const id = +b.dataset.refdel; const m = state.refs.find((x) => x.id === id);
+      if (m && m.seed) await store.set('seedDeleted', [...new Set([...(cache.get('seedDeleted') || []), m.seed])]);
+      await store.delMedia(id); state.refs = state.refs.filter((x) => x.id !== id); renderSheet(); toast('Removed');
+    });
   }
 
   /* ================= gallery ================= */
@@ -338,6 +350,15 @@
     const n = Math.min(b.length, a.length); const pairs = [];
     for (let i = 0; i < n; i++) pairs.push([b[i], a[i]]);
     return { pairs, singles: d.concat(b.slice(n), a.slice(n)) };
+  }
+  function refsHTML() {
+    const refs = state.refs || [];
+    if (!refs.length) return '';
+    return `<section class="sec" id="refs"><h3>What it looks like</h3>${refs.map((m) => `<figure class="ref">
+      <div class="media ref-media"><img src="${mediaURL(m)}" alt="${esc(m.caption || '')}" loading="lazy"></div>
+      <figcaption>${m.caption ? `<span>${esc(m.caption)}</span>` : ''}${m.credit ? `<small>Example photo: ${esc(m.credit.by)}, ${m.credit.link ? `<a href="${esc(m.credit.link)}" target="_blank" rel="noopener">${esc(m.credit.license)}</a>` : esc(m.credit.license)}</small>` : ''}</figcaption>
+      ${state.owner ? `<button class="mini danger ref-del" data-refdel="${m.id}" aria-label="Remove example photo">${I.trash}</button>` : ''}
+    </figure>`).join('')}</section>`;
   }
   function galleryHTML() {
     const list = state.media;
@@ -554,7 +575,7 @@
         else await store.set(k, v);
       }
       for (const m of data.media || []) { const blob = await dataToBlob(m.data); delete m.data; m.blob = blob; await store.putMedia(m); }
-      closeModal(); urlCache.clear(); refreshAfterEdit(); if (state.part) { state.media = await store.media(state.part); renderSheet(); }
+      closeModal(); urlCache.clear(); refreshAfterEdit(); if (state.part) { await loadPartMedia(state.part); renderSheet(); }
       toast('Backup restored');
     } catch (e) { toast('That file is not a Chimney Explorer backup.'); }
   }
@@ -620,7 +641,7 @@
       if (deleted.has(s.id)) continue;
       try {
         const blob = dataURLToBlob(s.data);
-        await store.putMedia({ part: s.part, label: s.label, caption: s.caption, kind: s.kind, mime: blob.type, blob, order: (order[s.part] = (order[s.part] || 0) + 1) - 1, created: Date.now(), seed: s.id });
+        await store.putMedia({ part: s.part, label: s.label, caption: s.caption, kind: s.kind, mime: blob.type, blob, order: (order[s.part] = (order[s.part] || 0) + 1) - 1, created: Date.now(), seed: s.id, credit: s.credit });
       } catch (e) { /* skipped; retried on next launch */ return; }
     }
     // the owner's own uploads follow the built-in ones
