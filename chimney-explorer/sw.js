@@ -1,5 +1,5 @@
 /* Offline cache for Chimney Explorer (used only when served from a web host). */
-const CACHE = 'chimney-explorer-v3';
+const CACHE = 'chimney-explorer-v4';
 const FILES = ['./', 'index.html', 'css/app.css', 'css/vendor/photoswipe.css', 'js/vendor/panzoom.min.js', 'js/vendor/photoswipe.umd.min.js', 'js/vendor/img-comparison-slider.js', 'js/content.js', 'js/scenes.js', 'js/seed.js', 'js/app.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

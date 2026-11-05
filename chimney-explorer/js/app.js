@@ -23,6 +23,7 @@
     tag: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h.01M3 12V3h9l9 9-9 9z"/></svg>',
     lr: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg>',
     phone: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+    list: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>',
     label: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg>',
     gear: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
   };
@@ -185,11 +186,14 @@
     $('#exTitle').textContent = 'Tap any part to explore';
     // owner tools
     const tools = $('#exTools');
+    const nMarked = marked(state.type).length;
     tools.innerHTML = `<button class="chip-btn ${state.labels ? 'on' : ''}" id="labelsBtn" aria-pressed="${state.labels}">${I.label} Labels</button>` +
+      `<button class="chip-btn ${nMarked ? 'dark' : ''}" id="sumBtn">${I.list} Summary${nMarked ? ` (${nMarked})` : ''}</button>` +
       (state.owner ? `<button class="chip-btn ${state.moving ? 'on' : ''}" id="moveBtn">${I.move} ${state.moving ? 'Done moving' : 'Move hotspots'}</button>
         <button class="chip-btn" id="bgBtn">${I.photo} ${bg ? 'Change image' : 'Use my own image'}</button>
         ${bg ? '<button class="chip-btn" id="bgReset">Restore default image</button>' : ''}` : '');
     $('#labelsBtn').onclick = () => { state.labels = !state.labels; savePrefs({ labels: state.labels }); renderExplorer(); };
+    $('#sumBtn').onclick = openSummary;
     if (state.owner) {
       $('#moveBtn').onclick = () => { state.moving = !state.moving; if (state.moving) toast('Drag the dots to line them up. Changes save automatically.'); renderExplorer(); };
       $('#bgBtn').onclick = () => pickFile('image/*', false, (files) => setBackground(files[0]));
@@ -211,15 +215,16 @@
     $('#hotspots').innerHTML = currentParts().map((p) => {
       const pos = hs[p.id]; const nm = part(p.id).name;
       const side = pos[0] > 0.8 ? 'l' : pos[0] < 0.2 ? 'r' : p.side;
-      return `<button class="hs" data-part="${p.id}" style="left:${pos[0] * 100}%;top:${pos[1] * 100}%" aria-label="${esc(nm)}"><span class="dot"></span><span class="lbl ${side}">${esc(nm)}</span></button>`;
+      return `<button class="hs ${cond(p.id) ? 'c-' + cond(p.id) : ''}" data-part="${p.id}" style="left:${pos[0] * 100}%;top:${pos[1] * 100}%" aria-label="${esc(nm)}"><span class="dot"></span><span class="lbl ${side}">${esc(nm)}</span></button>`;
     }).join('');
     const stage = $('#stage');
     stage.classList.toggle('no-labels', !state.labels);
     stage.classList.toggle('moving', state.moving);
+    stage.classList.toggle('has-marks', marked(state.type).length > 0);
     // chips
-    $('#chips').innerHTML = currentParts().map((p) => `<button data-part="${p.id}">${esc(part(p.id).name)}</button>`).join('');
+    $('#chips').innerHTML = currentParts().map((p) => `<button data-part="${p.id}">${cond(p.id) ? `<i class="cdot c-${cond(p.id)}"></i>` : ''}${esc(part(p.id).name)}</button>`).join('');
     fitStage();
-    setupZoom();
+    setupZoom(intro || state.moving);
     markActive();
     if (intro && !scene) intro = false;
     if (intro) {
@@ -242,7 +247,7 @@
 
   /* pinch / wheel zoom on the chimney (Panzoom, MIT) */
   let pz = null, downAt = null;
-  function setupZoom() {
+  function setupZoom(reset) {
     const el = $('#zoomer');
     if (!window.Panzoom || !el) return;
     if (!pz) {
@@ -257,7 +262,7 @@
       $('#zoomReset').onclick = () => pz.reset();
       $('#stage').addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; }, true);
     }
-    pz.reset({ animate: false });
+    if (reset) pz.reset({ animate: false });
     pz.setOptions({ disablePan: state.moving, disableZoom: state.moving });
     $('#zoomCtl').hidden = state.moving;
   }
@@ -304,6 +309,68 @@
     await store.set(k, saved);
   }
 
+  /* ================= condition marks + visit summary ================= */
+  const CONDS = [
+    { v: 'good', label: 'Good' },
+    { v: 'attn', label: 'Needs attention' },
+    { v: 'urgent', label: 'Urgent' }
+  ];
+  const visit = () => cache.get('visit') || { marks: {}, notes: {} };
+  const vkey = (id, type) => (type || state.type) + ':' + id;
+  const cond = (id, type) => visit().marks[vkey(id, type)] || '';
+  const note = (id, type) => visit().notes[vkey(id, type)] || '';
+  const marked = (type) => TYPES.find((t) => t.id === type).parts.filter((p) => cond(p.id, type));
+  async function saveVisit(fn) { const v = JSON.parse(JSON.stringify(visit())); fn(v); v.updated = Date.now(); await store.set('visit', v); }
+  function condHTML(id) {
+    const c = cond(id);
+    return `<section class="cond" id="condBox"><div class="cond-head"><h3>Condition at this home</h3>${c ? '<button class="linkish" id="condClear">Clear</button>' : ''}</div>
+      <div class="cond-row">${CONDS.map((o) => `<button class="cond-btn c-${o.v} ${c === o.v ? 'on' : ''}" data-cond="${o.v}" aria-pressed="${c === o.v}">${o.label}</button>`).join('')}</div>
+      ${c && c !== 'good' ? `<textarea id="condNote" rows="2" placeholder="Note for the summary, e.g. two cracks on the north side">${esc(note(id))}</textarea>` : ''}</section>`;
+  }
+  function bindCond(id) {
+    document.querySelectorAll('[data-cond]').forEach((b) => b.onclick = async () => {
+      const v = b.dataset.cond; await saveVisit((x) => { x.marks[vkey(id)] = v; }); refreshMarks(); toast(`Marked ${part(id).name}: ${CONDS.find((o) => o.v === v).label}`);
+    });
+    const clr = $('#condClear'); if (clr) clr.onclick = async () => { await saveVisit((x) => { delete x.marks[vkey(id)]; delete x.notes[vkey(id)]; }); refreshMarks(); };
+    const n = $('#condNote'); if (n) n.onchange = () => saveVisit((x) => { x.notes[vkey(id)] = n.value.trim(); });
+  }
+  function refreshMarks() {
+    const box = $('#condBox'); if (box && state.part) { box.outerHTML = condHTML(state.part); bindCond(state.part); }
+    const keepPart = state.part; renderExplorer(); state.part = keepPart; markActive();
+  }
+  async function openSummary() {
+    const ti = typeInfo(state.type); const s = settings();
+    const groups = CONDS.slice().reverse().map((o) => ({ o, parts: currentParts().filter((p) => cond(p.id) === o.v) }));
+    const firstAfter = {};
+    for (const p of currentParts()) if (cond(p.id) && cond(p.id) !== 'good') { const m = (await store.media(p.id)).find((x) => x.label === 'after' && x.kind === 'image'); if (m) firstAfter[p.id] = m; }
+    const total = groups.reduce((a, g) => a + g.parts.length, 0);
+    const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const body = total ? groups.filter((g) => g.parts.length).map((g) => `<section class="sum-group"><h3><i class="cdot c-${g.o.v}"></i>${g.o.label} <span>${g.parts.length}</span></h3>
+      ${g.parts.map((p) => { const pp = part(p.id); const n = note(p.id); const m = firstAfter[p.id];
+        return `<article class="sum-item c-${g.o.v}">
+          <div class="sum-text"><h4>${esc(pp.name)}</h4>${n ? `<p class="sum-note">${esc(n)}</p>` : `<p>${esc(pp.tagline || '')}</p>`}
+          ${g.o.v !== 'good' ? `<p class="sum-fix"><b>What we do:</b> ${esc((pp.service || '').split(/\n/)[0])}</p>` : ''}</div>
+          ${m ? `<img src="${mediaURL(m)}" alt="Example of our ${esc(pp.name)} work">` : ''}
+          <button class="linkish" data-sumopen="${p.id}">Details</button></article>`; }).join('')}</section>`).join('')
+      : `<div class="empty"><div class="ic">${I.list}</div><b>Nothing marked yet</b><span>Open a part and set its condition: Good, Needs attention or Urgent. It will show up here.</span></div>`;
+    const sum = $('#summary');
+    sum.innerHTML = `<div class="sum-wrap"><div class="sum-top"><button class="back" id="sumBack">${I.left}<span>Back</span></button>
+        ${total ? '<button class="linkish danger" id="sumNew">Start new visit</button>' : ''}</div>
+      <div class="eyebrow">${esc(s.business)} · ${esc(date)}</div>
+      <h1 id="sumTitle">Your ${esc(ti.name.toLowerCase())} today</h1>
+      ${total ? `<div class="sum-counts">${groups.slice().reverse().map((g) => `<div class="c-${g.o.v}"><b>${g.parts.length}</b><span>${g.o.label}</span></div>`).join('')}</div>` : ''}
+      ${body}
+      ${s.phone && total ? `<a class="cta" href="tel:${esc(s.phone.replace(/[^+\d]/g, ''))}">${I.phone} Call ${esc(s.phone)}</a>` : ''}</div>`;
+    sum.classList.add('show'); sum.scrollTop = 0;
+    $('#sumBack').onclick = closeSummary;
+    sum.querySelectorAll('[data-sumopen]').forEach((b) => b.onclick = () => { closeSummary(); openPart(b.dataset.sumopen); });
+    const nv = $('#sumNew'); if (nv) nv.onclick = async () => {
+      if (!(await confirmBox('Start a new visit?', 'All condition marks and notes are cleared for every fireplace type. Text, photos and videos are not affected.', 'Clear marks', true))) return;
+      await store.set('visit', { marks: {}, notes: {} }); closeSummary(); renderExplorer(); if (state.part) renderSheet(); toast('Ready for a new visit');
+    };
+  }
+  function closeSummary() { $('#summary').classList.remove('show'); }
+
   /* ================= part sheet ================= */
   async function loadPartMedia(id) {
     const all = await store.media(id);
@@ -338,6 +405,7 @@
       <h2 id="sheetTitle">${esc(p.name)}</h2>
       ${p.tagline ? `<p class="tagline">${esc(p.tagline)}</p>` : ''}
       ${state.owner ? `<div class="owner-row"><button class="chip-btn dark" id="editText">${I.edit} Edit text</button></div>` : ''}
+      ${condHTML(id)}
       <section class="sec"><h3>What it is</h3>${paras(p.what)}</section>
       ${probs ? `<section class="sec"><h3>Common problems</h3><ul class="problems">${probs}</ul></section>` : ''}
       <section class="sec service"><h3>What we do</h3>${paras(p.service)}
@@ -349,6 +417,7 @@
     $('#prevPart').onclick = () => openPart(prev.id);
     $('#nextPart').onclick = () => openPart(next.id);
     const et = $('#editText'); if (et) et.onclick = () => editPartText(id);
+    bindCond(id);
     bindGallery();
     document.querySelectorAll('[data-refdel]').forEach((b) => b.onclick = async () => {
       if (!(await confirmBox('Remove this example photo?', 'It will no longer show for this part on this device.', 'Remove', true))) return;
@@ -717,6 +786,7 @@
     bindSheetDrag();
     document.addEventListener('keydown', (e) => {
       if (document.querySelector('.pswp')) return;
+      if (e.key === 'Escape' && $('#summary').classList.contains('show')) { closeSummary(); return; }
       if (e.key === 'Escape') { if ($('#lightbox').classList.contains('show')) closeLightbox(); else if ($('#modal').classList.contains('show')) closeModal(); else if (state.part) closePart(); else if (state.screen === 'explorer') go('home'); }
       if (state.part && !$('#modal').classList.contains('show') && !$('#lightbox').classList.contains('show') && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
         if (e.key === 'ArrowRight') $('#nextPart').click(); if (e.key === 'ArrowLeft') $('#prevPart').click();
