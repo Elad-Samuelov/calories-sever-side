@@ -515,10 +515,102 @@
     return { W, H, svg: o, hits };
   }
 
+
+  /* =================================================================
+     SCENE 4 — Chimney chase (framed, sided chase with metal chimney pipe)
+     ================================================================= */
+  function sidingFill(c, key, d, box, o) {
+    o = o || {}; const R = c.real; const step = o.step || 16;
+    const cid = c.id('sd-' + key);
+    let s = `<clipPath id="${cid}"><path d="${d}" clip-rule="evenodd"/></clipPath><g clip-path="url(#${cid})">`;
+    s += rect(box.x, box.y, box.w, box.h, `fill="${R ? (o.base || '#d9ccb4') : (o.flat || '#efe3cc')}"`);
+    let ln = '';
+    for (let y = box.y + ((o.oy || 0) % step); y < box.y + box.h; y += step) {
+      if (R) { s += rect(box.x, y, box.w, step * 0.45, 'fill="#fff" opacity=".10"'); s += rect(box.x, y + step - 2, box.w, 2, 'fill="#000" opacity=".22"'); }
+      else ln += `M${box.x} ${y + step - 1}H${box.x + box.w}`;
+    }
+    if (!R) s += path(ln, `stroke="${o.line || '#cdbb9c'}" stroke-width="1.3"`);
+    if (R && o.light !== false) s += rect(box.x, box.y, box.w, box.h, `fill="${c.url('lightL')}"`);
+    return s + '</g>';
+  }
+  function chase(c) {
+    const W = 600, H = 1000, R = c.real;
+    const roofY = (x) => 520 + 0.18 * x;
+    let o = defs(c);
+    o += path(`M0 0H600V${roofY(600)}L0 ${roofY(0)}Z`, `fill="${R ? c.url('sky') : '#eef3f6'}"`);
+    // house wall below the roof
+    o += sidingFill(c, 'wall', `M0 ${roofY(0)}L600 ${roofY(600)}V1000H0Z`, { x: 0, y: 500, w: 600, h: 500 }, { base: '#e4dccb', flat: '#f6f0e4', line: '#e0d4bf', step: 18 });
+    // window
+    o += rect(430, 760, 120, 170, R ? 'fill="#f4f1ea"' : `fill="#fff" ${OUT}`) + rect(442, 772, 96, 146, R ? 'fill="#41505c"' : 'fill="#cfdbe3"') + rect(442, 843, 96, 4, R ? 'fill="#f4f1ea"' : `fill="#fff"`);
+    if (R) o += poly([[442, 772], [500, 772], [442, 840]], 'fill="#fff" opacity=".12"');
+    // roof band
+    const band = (a, b) => [[-10, roofY(-10) + a], [610, roofY(610) + a], [610, roofY(610) + b], [-10, roofY(-10) + b]];
+    o += poly(band(18, 34), R ? 'fill="#f1ede6"' : `fill="#fff" ${OUT}`);
+    o += poly(band(8, 18), R ? 'fill="#d8b47f"' : `fill="#f3dfbf" ${OUT}`);
+    o += poly(band(-2, 8), R ? `fill="${c.url('shingle')}"` : `fill="#5f646b" ${OUT}`);
+    if (R) { let d = ''; for (let x = -10; x < 610; x += 14) d += `M${x} ${f(roofY(x) - 2)}L${x + 3} ${f(roofY(x + 3) + 8)}`; o += path(d, 'stroke="#18191b" stroke-width="1" opacity=".6"'); }
+
+    // chase box with stepped cutaway along siding courses
+    const cx0 = 230, cx1 = 370, top = 172, step = 16;
+    const r = rng(19); const left = [], right = [];
+    for (let y = 268; y < 812; y += step) {
+      const L = 252 - Math.round(r() * 2) * 4, Rr = 348 + Math.round(r() * 2) * 4;
+      left.push([L, y], [L, y + step]); right.unshift([Rr, y + step], [Rr, y]);
+    }
+    const reveal = left.concat(right); const revealD = polyD(reveal);
+    const chaseD = rectD(cx0, top, cx1 - cx0, 1000 - top);
+    o += sidingFill(c, 'chase', chaseD + revealD, { x: cx0, y: top, w: cx1 - cx0, h: 1000 - top }, { base: '#d3c3a4', flat: '#ecdcbc', line: '#c9b28b', oy: top });
+    // corner trims
+    o += rect(cx0, top, 9, 1000 - top, R ? 'fill="#e6dac3"' : `fill="#f6ecd8" ${OUT}`) + rect(cx1 - 9, top, 9, 1000 - top, R ? 'fill="#b9a787"' : `fill="#f6ecd8" ${OUT}`);
+    if (!R) o += path(chaseD, `fill="none" ${OUT}`);
+    // inside: framing, insulation, pipe
+    const rid = c.id('rv');
+    o += `<clipPath id="${rid}"><path d="${revealD}"/></clipPath><g clip-path="url(#${rid})">`;
+    o += rect(230, 260, 140, 560, R ? `fill="${c.url('cavity')}"` : 'fill="#f3ebe3"');
+    o += rect(244, 260, 112, 560, R ? 'fill="#c79c6c" opacity=".35"' : 'fill="#f6e7d2"');
+    const stud = R ? `fill="${c.url('wood')}"` : `fill="#e2bf8d" ${OUT}`;
+    o += rect(244, 260, 14, 560, stud) + rect(342, 260, 14, 560, stud);
+    for (const y of [300, 470, 640, 790]) o += rect(244, y, 112, 12, stud);
+    // metal chimney pipe
+    o += rect(278, 172, 44, 660, R ? `fill="${c.url('steel')}"` : `fill="#dfe4e8" ${OUT}`);
+    let jd = ''; for (let y = 330; y < 830; y += 130) jd += `M278 ${y}H322`;
+    o += path(jd, R ? 'stroke="#5d646b" stroke-width="3"' : `stroke="${INK}" stroke-width="1.4"`);
+    o += '</g>';
+    if (R) o += `<g clip-path="url(#${rid})">${path(revealD, 'fill="none" stroke="#000" stroke-width="16" opacity=".4" filter="' + c.url('blur6') + '"')}${path(revealD, 'fill="none" stroke="#8a7a60" stroke-width="5"')}</g>`;
+    else o += path(revealD, `fill="none" ${OUT}`);
+
+    // flashing where chase meets roof
+    const fl = (x0, x1) => poly([[x0, roofY(x0) - 2], [x1, roofY(x1) - 2], [x1, roofY(x1) - 26], [x0, roofY(x0) - 26]], R ? `fill="${c.url('alu')}" filter="${c.url('shadow')}"` : `fill="#b9c2ca" ${OUT}`);
+    o += fl(230, 252) + fl(348, 370);
+    o += poly([[200, roofY(200) - 3], [230, roofY(230) - 3], [230, roofY(230) + 3], [200, roofY(200) + 3]], R ? `fill="${c.url('alu')}"` : `fill="#b9c2ca" ${OUT}`);
+    o += poly([[370, roofY(370) - 3], [400, roofY(400) - 3], [400, roofY(400) + 3], [370, roofY(370) + 3]], R ? `fill="${c.url('alu')}"` : `fill="#b9c2ca" ${OUT}`);
+
+    // chase cover (metal pan with drip edge)
+    o += poly([[220, 158], [380, 158], [384, 176], [216, 176]], R ? `fill="${c.url('ironH')}" filter="${c.url('shadow')}"` : `fill="#4a4f55" ${OUT}`);
+    if (R) o += rect(220, 158, 160, 3, 'fill="#fff" opacity=".25"');
+    // decorative shroud: base, screened band, hip roof
+    o += rect(236, 128, 128, 30, R ? `fill="${c.url('ironH')}"` : `fill="#3f4449" ${OUT}`);
+    o += rect(244, 98, 112, 30, R ? `fill="${c.url('mesh')}"` : `fill="#f1f3f5" ${OUT}`);
+    if (!R) { let md = ''; for (let x = 250; x < 356; x += 7) md += `M${x} 98V128`; for (let y = 104; y < 128; y += 7) md += `M244 ${y}H356`; o += path(md, 'stroke="#8f979f" stroke-width="1"'); }
+    for (const x of [242, 296, 350]) o += rect(x, 98, 8, 30, R ? 'fill="#25282c"' : 'fill="#3f4449"');
+    o += poly([[214, 100], [386, 100], [340, 62], [260, 62]], R ? `fill="${c.url('ironH')}" filter="${c.url('shadow')}"` : `fill="#3f4449" ${OUT}`);
+    if (R) o += poly([[260, 62], [340, 62], [346, 67], [254, 67]], 'fill="#fff" opacity=".3"');
+    o += overlays(c, W, H);
+
+    const hits = {
+      shroud: { d: rectD(212, 58, 176, 100) },
+      chasecover: { d: rectD(214, 156, 172, 22) },
+      chase: { d: chaseD + revealD, rule: 'evenodd' },
+      pipe: { d: rectD(276, 260, 48, 560) },
+      flashing: { d: polyD([[198, roofY(198) - 28], [254, roofY(254) - 28], [254, roofY(254) + 6], [198, roofY(198) + 6]]) + polyD([[346, roofY(346) - 28], [402, roofY(402) - 28], [402, roofY(402) + 6], [346, roofY(346) + 6]]) }
+    };
+    return { W, H, svg: o, hits };
+  }
+
   window.CX_SCENES = {
     render(type, style) {
       const c = makeCtx(style === 'real');
-      const fn = { masonry, wood, insert }[type];
+      const fn = { masonry, wood, insert, chase }[type];
       return fn(c);
     }
   };

@@ -1,6 +1,6 @@
 """Builds js/seed.js (built-in Before/After gallery) from seed/manifest.json.
 Usage: python3 tools/build-seed.py <folder with original photos>
-Composites are split with "crop": "left" | "right"; photos are resized to 1200px."""
+Composites are split with "crop": "left" | "right" | [x0, y0, x1, y1] (fractions); photos are resized to 1000px."""
 import base64, io, json, os, sys
 from PIL import Image, ImageOps
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,9 +17,12 @@ for it in items:
         im = ImageOps.exif_transpose(Image.open(path)).convert('RGB')
         if it.get('crop'):
             w, h = im.size
-            im = im.crop((0, 0, w // 2, h) if it['crop'] == 'left' else (w - w // 2, 0, w, h))
-        im.thumbnail((1200, 1200))
-        buf = io.BytesIO(); im.save(buf, 'JPEG', quality=74, optimize=True, progressive=True)
+            c = it['crop']
+            if c == 'left': c = [0, 0, 0.5, 1]
+            elif c == 'right': c = [0.5, 0, 1, 1]
+            im = im.crop((int(c[0] * w), int(c[1] * h), int(c[2] * w), int(c[3] * h)))
+        im.thumbnail((1000, 1000))
+        buf = io.BytesIO(); im.save(buf, 'JPEG', quality=70, optimize=True, progressive=True)
         data = 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
         kind = 'image'
     out.append({'id': it['id'], 'part': it['part'], 'label': it['label'], 'caption': it['caption'], 'kind': kind, 'data': data})

@@ -2,7 +2,7 @@
 
 An interactive chimney and fireplace guide for showing clients, on a phone or tablet, how each part works and what you repair.
 
-- **3 fireplace types:** Masonry Chimney, Wood-Burning Fireplace, Fireplace Insert
+- **4 types:** Masonry Chimney, Wood-Burning Fireplace, Fireplace Insert, Chimney Chase
 - **2 visual versions:** *Realistic* (shaded render) and *Illustrated* (clean diagram). Switch with the toggle in the top bar. Both versions have the same parts, text and galleries.
 - **Part panels:** what the part is, common problems, what we do, and a Before/After gallery (side by side or slider)
 - **Owner mode** (lock icon): edit every text, upload, label, caption, reorder and delete photos and videos, drag hotspots, use your own photo as the background, set a phone number and an optional PIN, and back up or restore everything
@@ -54,4 +54,4 @@ python3 tools/build-seed.py   # rebuilds js/seed.js (needs Python + Pillow)
 node build.js                 # rebuilds dist/chimney-explorer.html
 ```
 
-Built-in photos are copied into the app's storage the first time it opens on a device. After that the owner can edit, reorder or delete them like any upload.
+Built-in photos are copied into the app's storage the first time it opens on a device, and the owner can edit, reorder or delete them like any upload. Labels are `before`, `after` or `during`; list each Before directly followed by its After. When the list changes, built-in items are reloaded (caption edits on them reset) but ones the owner deleted stay deleted.

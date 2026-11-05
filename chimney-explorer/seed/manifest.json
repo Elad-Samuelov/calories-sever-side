@@ -1,20 +1,292 @@
 [
-  {"id":"cap-white-b","part":"cap","label":"before","src":"f83f2477-image.jpg","crop":"left","caption":"Painted brick chimney with no cap and a worn crown"},
-  {"id":"cap-white-a","part":"cap","label":"after","src":"f83f2477-image.jpg","crop":"right","caption":"New black cap installed and the chimney repainted"},
-  {"id":"cap-chase-b","part":"cap","label":"before","src":"f4803bfb-image.jpg","crop":"left","caption":"Siding chase with a plain round termination cap"},
-  {"id":"cap-chase-a","part":"cap","label":"after","src":"f4803bfb-image.jpg","crop":"right","caption":"Custom shroud painted to match the siding"},
-  {"id":"cap-cover","part":"cap","label":"after","src":"e481e299-image.jpg","caption":"Custom chase cover and cap with screened sides"},
-  {"id":"cap-stucco","part":"cap","label":"after","src":"ef546896-image.jpg","caption":"New black cap on a stucco chimney"},
-  {"id":"cap-video","part":"cap","label":"after","src":"cap-chase-install.mp4","video":true,"caption":"Installing a custom chase cap (video)"},
-  {"id":"crown-paint-b","part":"crown","label":"before","src":"82a30279-image.jpg","crop":"left","caption":"Peeling paint, cracked crown and old flashing"},
-  {"id":"crown-paint-a","part":"crown","label":"after","src":"82a30279-image.jpg","crop":"right","caption":"New crown, stainless cap and cleaned brick"},
-  {"id":"crown-brick","part":"crown","label":"after","src":"067cf70b-image.jpg","caption":"Freshly formed mortar crown around the clay flue"},
-  {"id":"crown-stone","part":"crown","label":"after","src":"43adb628-image.jpg","caption":"New crown on a stone chimney"},
-  {"id":"flash-b","part":"flashing","label":"before","src":"ae3d7e8b-image.jpg","caption":"Old, patched step flashing where the roof meets the brick"},
-  {"id":"flash-a","part":"flashing","label":"after","src":"ae0b77a7-image.jpg","caption":"New cricket and flashing steer water around the chimney"},
-  {"id":"brick-b","part":"brick","label":"before","src":"2e10dbfa-image.jpg","caption":"During tuckpointing: fresh mortar packed into worn joints"},
-  {"id":"brick-a","part":"brick","label":"after","src":"391527e0-image.jpg","caption":"Repointed chimney above the roofline"},
-  {"id":"firebox-b","part":"firebox","label":"before","src":"103eb36b-image.jpg","caption":"Sooty firebox with eroded joints being patched"},
-  {"id":"firebox-a","part":"firebox","label":"after","src":"a7d32810-image.jpg","caption":"Firebox after cleaning and refractory mortar repair"},
-  {"id":"liner-chase","part":"liner","label":"after","src":"2843ac92-image.jpg","caption":"Chase rebuild: new stainless liner, framing, house wrap and siding"}
+ {
+  "id": "cap-white-b",
+  "part": "cap",
+  "label": "before",
+  "src": "f83f2477-image.jpg",
+  "crop": "left",
+  "caption": "Painted brick chimney with no cap and a worn crown"
+ },
+ {
+  "id": "cap-white-a",
+  "part": "cap",
+  "label": "after",
+  "src": "f83f2477-image.jpg",
+  "crop": "right",
+  "caption": "New black cap installed and the chimney repainted"
+ },
+ {
+  "id": "cap-stucco",
+  "part": "cap",
+  "label": "after",
+  "src": "ef546896-image.jpg",
+  "caption": "New black cap on a stucco chimney"
+ },
+ {
+  "id": "cap-chase-b",
+  "part": "shroud",
+  "label": "before",
+  "src": "f4803bfb-image.jpg",
+  "crop": "left",
+  "caption": "Siding chase with a plain round termination cap"
+ },
+ {
+  "id": "cap-chase-a",
+  "part": "shroud",
+  "label": "after",
+  "src": "f4803bfb-image.jpg",
+  "crop": "right",
+  "caption": "Custom shroud painted to match the siding"
+ },
+ {
+  "id": "shroud-cage-b",
+  "part": "shroud",
+  "label": "before",
+  "src": "72651e34-image.jpg",
+  "crop": [
+   0.005,
+   0.27,
+   0.495,
+   0.73
+  ],
+  "caption": "Rusty round cage cap on a siding chase"
+ },
+ {
+  "id": "shroud-cage-a",
+  "part": "shroud",
+  "label": "after",
+  "src": "72651e34-image.jpg",
+  "crop": [
+   0.506,
+   0.27,
+   0.995,
+   0.73
+  ],
+  "caption": "Black shroud with bird spikes"
+ },
+ {
+  "id": "shroud-stucco",
+  "part": "shroud",
+  "label": "during",
+  "src": "1d9ad7b1-image.jpg",
+  "caption": "Fastening a custom shroud on a stucco chimney"
+ },
+ {
+  "id": "cap-video",
+  "part": "shroud",
+  "label": "after",
+  "src": "cap-chase-install.mp4",
+  "video": true,
+  "caption": "Installing a custom chase cap (video)"
+ },
+ {
+  "id": "cap-cover",
+  "part": "chasecover",
+  "label": "after",
+  "src": "e481e299-image.jpg",
+  "caption": "Custom chase cover and cap with screened sides"
+ },
+ {
+  "id": "chasecover-ss",
+  "part": "chasecover",
+  "label": "after",
+  "src": "299e0a5d-image.jpg",
+  "caption": "Stainless steel chase cover with storm collar"
+ },
+ {
+  "id": "crown-paint-b",
+  "part": "crown",
+  "label": "before",
+  "src": "82a30279-image.jpg",
+  "crop": "left",
+  "caption": "Peeling paint, cracked crown and old flashing"
+ },
+ {
+  "id": "crown-paint-a",
+  "part": "crown",
+  "label": "after",
+  "src": "82a30279-image.jpg",
+  "crop": "right",
+  "caption": "New crown, stainless cap and cleaned brick"
+ },
+ {
+  "id": "crown-mesh-b",
+  "part": "crown",
+  "label": "before",
+  "src": "7d579a1c-image.jpg",
+  "caption": "Crown broken apart and loose bricks at the top"
+ },
+ {
+  "id": "crown-mesh-a",
+  "part": "crown",
+  "label": "after",
+  "src": "77504345-image.jpg",
+  "caption": "Top rebuilt, new flashing and a custom shroud"
+ },
+ {
+  "id": "crown-crack-b",
+  "part": "crown",
+  "label": "before",
+  "src": "7de00f48-image.jpg",
+  "caption": "Cracked, crumbling crown letting water in"
+ },
+ {
+  "id": "crown-crack-a",
+  "part": "crown",
+  "label": "after",
+  "src": "936d2a26-image.jpg",
+  "caption": "New crown and a screened cap"
+ },
+ {
+  "id": "crown-brick",
+  "part": "crown",
+  "label": "after",
+  "src": "067cf70b-image.jpg",
+  "caption": "Freshly formed mortar crown around the clay flue"
+ },
+ {
+  "id": "crown-stone",
+  "part": "crown",
+  "label": "after",
+  "src": "43adb628-image.jpg",
+  "caption": "New crown on a stone chimney"
+ },
+ {
+  "id": "flash-b",
+  "part": "flashing",
+  "label": "before",
+  "src": "ae3d7e8b-image.jpg",
+  "caption": "Old, patched step flashing where the roof meets the brick"
+ },
+ {
+  "id": "flash-a",
+  "part": "flashing",
+  "label": "after",
+  "src": "ae0b77a7-image.jpg",
+  "caption": "New cricket and flashing steer water around the chimney"
+ },
+ {
+  "id": "flash-galv",
+  "part": "flashing",
+  "label": "after",
+  "src": "33fba3e9-image.jpg",
+  "caption": "New step and counter-flashing, crown resurfaced"
+ },
+ {
+  "id": "brick-b",
+  "part": "brick",
+  "label": "before",
+  "src": "2e10dbfa-image.jpg",
+  "caption": "During tuckpointing: fresh mortar packed into worn joints"
+ },
+ {
+  "id": "brick-a",
+  "part": "brick",
+  "label": "after",
+  "src": "391527e0-image.jpg",
+  "caption": "Repointed chimney above the roofline"
+ },
+ {
+  "id": "brick-top-b",
+  "part": "brick",
+  "label": "before",
+  "src": "adfe0eb2-image.jpg",
+  "crop": "left",
+  "caption": "Top courses of brick loose and falling apart"
+ },
+ {
+  "id": "brick-top-a",
+  "part": "brick",
+  "label": "after",
+  "src": "adfe0eb2-image.jpg",
+  "crop": "right",
+  "caption": "Top rebuilt and finished with a custom shroud"
+ },
+ {
+  "id": "firebox-b",
+  "part": "firebox",
+  "label": "before",
+  "src": "103eb36b-image.jpg",
+  "caption": "Sooty firebox with eroded joints being patched"
+ },
+ {
+  "id": "firebox-a",
+  "part": "firebox",
+  "label": "after",
+  "src": "a7d32810-image.jpg",
+  "caption": "Firebox after cleaning and refractory mortar repair"
+ },
+ {
+  "id": "chase-rot-b",
+  "part": "chase",
+  "label": "before",
+  "src": "2e41b208-image.jpg",
+  "caption": "Siding off: rotted sheathing and framing around the chimney pipe"
+ },
+ {
+  "id": "chase-rot-a",
+  "part": "chase",
+  "label": "after",
+  "src": "2843ac92-image.jpg",
+  "crop": [
+   0.5,
+   0,
+   1,
+   0.5
+  ],
+  "caption": "Same chase rebuilt with new siding and trim"
+ },
+ {
+  "id": "chase-peel-b",
+  "part": "chase",
+  "label": "before",
+  "src": "5342c5d7-image.jpg",
+  "crop": "left",
+  "caption": "Peeling, water-damaged siding and an old round cap"
+ },
+ {
+  "id": "chase-peel-a",
+  "part": "chase",
+  "label": "after",
+  "src": "5342c5d7-image.jpg",
+  "crop": "right",
+  "caption": "New siding and a black shroud"
+ },
+ {
+  "id": "chase-brick-b",
+  "part": "chase",
+  "label": "before",
+  "src": "92aad5f4-image.jpg",
+  "crop": "left",
+  "caption": "Brick chimney before the upper section was rebuilt"
+ },
+ {
+  "id": "chase-d1",
+  "part": "chase",
+  "label": "during",
+  "src": "f395bd0c-image.jpg",
+  "caption": "Old siding stripped down to the sheathing"
+ },
+ {
+  "id": "chase-d2",
+  "part": "chase",
+  "label": "during",
+  "src": "b503c21d-image.jpg",
+  "caption": "New framing around the chimney pipe"
+ },
+ {
+  "id": "chase-d3",
+  "part": "chase",
+  "label": "during",
+  "src": "36a35022-image.jpg",
+  "caption": "New sheathing wrapped in house wrap before the siding goes on"
+ },
+ {
+  "id": "chase-brick-d",
+  "part": "chase",
+  "label": "during",
+  "src": "92aad5f4-image.jpg",
+  "crop": "right",
+  "caption": "Upper section rebuilt and wrapped, ready for finish"
+ }
 ]

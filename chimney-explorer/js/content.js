@@ -49,10 +49,50 @@
         { id: 'blower', x: 300, y: 651, side: 'r' },
         { id: 'surround', x: 179, y: 470, side: 'l' }
       ]
+    },
+    {
+      id: 'chase',
+      name: 'Chimney Chase',
+      desc: 'A framed, sided chimney box around a metal chimney pipe, common on factory-built fireplaces.',
+      parts: [
+        { id: 'shroud', x: 300, y: 84, side: 'r' },
+        { id: 'chasecover', x: 372, y: 167, side: 'r' },
+        { id: 'pipe', x: 300, y: 520, side: 'r' },
+        { id: 'chase', x: 300, y: 900, side: 'r' },
+        { id: 'flashing', x: 241, y: 548, side: 'l' }
+      ]
     }
   ];
 
   const PARTS = {
+    shroud: {
+      name: 'Chimney Shroud',
+      tagline: 'The decorative cap that finishes the top.',
+      what: 'A shroud is a decorative metal cap that covers the top of the chimney and hides the plain round pipe cap underneath. It keeps rain, animals and debris out, and its screened sides let smoke escape.\n\nOn factory-built fireplaces, the shroud must be a model the manufacturer allows, so it does not trap heat or affect the draft.',
+      problems: ['Rusted or faded finish', 'Old round cap that looks unfinished', 'Birds or animals getting in', 'Wrong type of shroud for a factory-built chimney'],
+      service: 'We install custom-made shrouds in black, bronze or a color matched to your siding, with screened sides and optional bird spikes. We check that the shroud is approved for your chimney system.'
+    },
+    chasecover: {
+      name: 'Chase Cover',
+      tagline: 'The metal lid that keeps water out of the chase.',
+      what: 'The chase cover is the metal pan that seals the top of a framed chimney chase. The chimney pipe passes through a collar in the middle.\n\nA good chase cover is sloped or cross-broken so water runs off, and has a drip edge so water falls clear of the siding.',
+      problems: ['Rust stains running down the siding', 'Flat cover that holds standing water', 'Rusted through, letting water into the chase', 'Water leaking around the fireplace inside the house'],
+      service: 'We replace rusted covers with custom-measured stainless steel or powder-coated covers, with a raised center, a drip edge and a sealed storm collar.'
+    },
+    chase: {
+      name: 'Chase Siding & Framing',
+      tagline: 'The wood box that surrounds the chimney pipe.',
+      what: 'A chase is a wood-framed box, covered in siding, that encloses the metal chimney pipe of a factory-built fireplace. It looks like a chimney from outside.\n\nBecause it is made of wood, the chase must stay dry. Water that gets in through the top, the flashing or failed siding slowly rots the sheathing and framing.',
+      problems: ['Peeling paint, swollen or rotted siding', 'Soft or rotted sheathing and framing', 'Gaps at the corners and trim', 'Leaning or sagging chase'],
+      service: 'We remove damaged siding and sheathing, replace rotted framing, wrap the chase in house wrap, and install new siding and trim, painted to match the house. We usually finish with a new chase cover and shroud.'
+    },
+    pipe: {
+      name: 'Chimney Pipe',
+      tagline: 'The metal flue inside the chase.',
+      what: 'Factory-built fireplaces vent through an insulated metal chimney pipe that runs up inside the chase. It is tested and listed together with the fireplace, so only matching parts should be used.\n\nThe pipe keeps hot gases away from the wood framing around it.',
+      problems: ['Rust from water entering through the top of the chase', 'Separated or damaged joints', 'Wrong or mismatched replacement parts', 'Creosote buildup inside'],
+      service: 'We inspect and sweep the pipe, replace rusted sections with listed parts, and fix the water entry that caused the damage.'
+    },
     cap: {
       name: 'Chimney Cap',
       tagline: 'The roof over your chimney.',

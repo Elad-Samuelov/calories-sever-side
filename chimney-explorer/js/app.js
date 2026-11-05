@@ -161,7 +161,7 @@
     if (bg && bg.url) return `<img src="${bg.url}" alt="">`;
     const sc = SCENES.render(type, state.style);
     // frame the most recognisable part of each scene
-    const vb = { masonry: '60 560 480 400', wood: '150 360 440 380', insert: '70 320 460 420' }[type];
+    const vb = { masonry: '60 560 480 400', wood: '150 360 440 380', insert: '70 320 460 420', chase: '120 40 360 300' }[type];
     return `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${sc.svg}</svg>`;
   }
 
@@ -330,13 +330,14 @@
     const u = mediaURL(m); const isV = m.kind === 'video';
     return `<button class="media" data-open="${m.id}" aria-label="Open ${esc(m.label)} ${isV ? 'video' : 'photo'}">
       ${isV ? `<video src="${u}#t=0.1" muted playsinline preload="metadata"></video><span class="play"><i>${I.play}</i></span>` : `<img src="${u}" alt="${esc(m.caption || m.label)}" loading="lazy">`}
-      ${extra === false ? '' : `<span class="tag ${m.label}">${m.label === 'after' ? 'After' : 'Before'}</span>`}</button>`;
+      ${extra === false ? '' : `<span class="tag ${m.label}">${tagText(m.label)}</span>`}</button>`;
   }
+  const tagText = (l) => (l === 'after' ? 'After' : l === 'during' ? 'During' : 'Before');
   function pairsOf(list) {
-    const b = list.filter((m) => m.label !== 'after'), a = list.filter((m) => m.label === 'after');
+    const b = list.filter((m) => m.label === 'before'), a = list.filter((m) => m.label === 'after'), d = list.filter((m) => m.label !== 'before' && m.label !== 'after');
     const n = Math.min(b.length, a.length); const pairs = [];
     for (let i = 0; i < n; i++) pairs.push([b[i], a[i]]);
-    return { pairs, singles: b.slice(n).concat(a.slice(n)) };
+    return { pairs, singles: d.concat(b.slice(n), a.slice(n)) };
   }
   function galleryHTML() {
     const list = state.media;
@@ -365,7 +366,7 @@
     const items = list.map((m, i) => `<div class="ed-item" data-id="${m.id}">
       ${mediaTile(m)}
       <div class="fields">
-        <div class="row"><div class="seg sm" data-labelseg="${m.id}"><button data-v="before">Before</button><button data-v="after">After</button></div>
+        <div class="row"><div class="seg sm" data-labelseg="${m.id}"><button data-v="before">Before</button><button data-v="during">During</button><button data-v="after">After</button></div>
           <span style="flex:1"></span>
           <button class="mini" data-up="${m.id}" ${i === 0 ? 'disabled' : ''} aria-label="Move up">${I.up}</button>
           <button class="mini" data-down="${m.id}" ${i === list.length - 1 ? 'disabled' : ''} aria-label="Move down">${I.down}</button>
@@ -375,7 +376,7 @@
     return `<div class="gal-head"><h3>Before &amp; After</h3><span class="hint" style="margin:0">${list.length} item${list.length === 1 ? '' : 's'}</span></div>
       ${list.length ? `<div class="ed-list">${items}</div>` : `<div class="empty"><div class="ic">${I.photo}</div><b>No examples yet</b><span>Add photos or videos from your own jobs.</span></div>`}
       <div class="add-row"><button class="add-btn" data-add="before">${I.plus} Add Before</button><button class="add-btn" data-add="after">${I.plus} Add After</button></div>
-      <p class="hint">Before and After items are paired in order: the first Before goes with the first After. Clients see them side by side or with a slider.</p>`;
+      <p class="hint">Before and After items are paired in order: the first Before goes with the first After. During shots show on their own. Clients see pairs side by side or with a slider.</p>`;
   }
   function bindGallery() {
     const g = $('#gallery'); if (!g) return;
@@ -387,14 +388,16 @@
     g.querySelectorAll('[data-labelseg]').forEach((sg) => {
       const m = state.media.find((x) => x.id === +sg.dataset.labelseg);
       syncSeg(sg, m.label);
-      sg.onclick = async (e) => { const b = e.target.closest('button'); if (!b) return; m.label = b.dataset.v; await store.putMedia(m); syncSeg(sg, m.label); const tg = sg.closest('.ed-item').querySelector('.tag'); tg.className = 'tag ' + m.label; tg.textContent = m.label === 'after' ? 'After' : 'Before'; };
+      sg.onclick = async (e) => { const b = e.target.closest('button'); if (!b) return; m.label = b.dataset.v; await store.putMedia(m); syncSeg(sg, m.label); const tg = sg.closest('.ed-item').querySelector('.tag'); tg.className = 'tag ' + m.label; tg.textContent = tagText(m.label); };
     });
     g.querySelectorAll('[data-cap]').forEach((inp) => {
       inp.onchange = async () => { const m = state.media.find((x) => x.id === +inp.dataset.cap); m.caption = inp.value.trim(); await store.putMedia(m); toast('Caption saved'); };
     });
     g.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
       if (!(await confirmBox('Delete this item?', 'It will be removed from this gallery on this device.', 'Delete', true))) return;
-      const id = +b.dataset.del; await store.delMedia(id);
+      const id = +b.dataset.del; const gone = state.media.find((m) => m.id === id);
+      if (gone && gone.seed) await store.set('seedDeleted', [...new Set([...(cache.get('seedDeleted') || []), gone.seed])]);
+      await store.delMedia(id);
       if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); }
       state.media = state.media.filter((m) => m.id !== id); await renumber(); refreshGallery(); toast('Deleted');
     });
@@ -423,7 +426,7 @@
       } catch (e) { toast('Could not save ' + file.name + '. The device may be out of storage.'); }
     }
     refreshGallery();
-    if (added) toast(`${added} ${label === 'after' ? 'After' : 'Before'} item${added > 1 ? 's' : ''} added`);
+    if (added) toast(`${added} ${tagText(label)} item${added > 1 ? 's' : ''} added`);
   }
   function pickFile(accept, multiple, cb) {
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = accept; inp.multiple = !!multiple;
@@ -449,7 +452,7 @@
   function openLightbox(id) { lbIndex = state.media.findIndex((m) => m.id === id); if (lbIndex < 0) return; renderLightbox(); $('#lightbox').classList.add('show'); }
   function renderLightbox() {
     const m = state.media[lbIndex]; const u = mediaURL(m); const many = state.media.length > 1;
-    $('#lightbox').innerHTML = `<div class="lb-top"><span class="tag" style="position:static" >${m.label === 'after' ? 'After' : 'Before'} · ${lbIndex + 1} of ${state.media.length}</span><button class="icon-btn" id="lbClose" aria-label="Close">${I.close}</button></div>
+    $('#lightbox').innerHTML = `<div class="lb-top"><span class="tag" style="position:static" > ${tagText(m.label)} · ${lbIndex + 1} of ${state.media.length}</span><button class="icon-btn" id="lbClose" aria-label="Close">${I.close}</button></div>
       <div class="lb-main">${m.kind === 'video' ? `<video src="${u}" controls autoplay playsinline></video>` : `<img src="${u}" alt="${esc(m.caption || '')}">`}
       ${many ? `<button class="icon-btn nav prev" id="lbPrev" aria-label="Previous">${I.left}</button><button class="icon-btn nav next" id="lbNext" aria-label="Next">${I.right}</button>` : ''}</div>
       <div class="lb-cap">${esc(m.caption || '')}</div>`;
@@ -602,20 +605,27 @@
     const u8 = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k);
     return new Blob([u8], { type: mime });
   }
+  // When the built-in list changes (new photos, new pairing), built-in items are re-laid out
+  // ahead of the owner's own uploads. Items the owner deleted are never brought back.
   async function importSeed() {
     const seed = window.CX_SEED || []; if (!seed.length) return;
-    const done = new Set(cache.get('seeded') || []);
-    const todo = seed.filter((s) => !done.has(s.id)); if (!todo.length) return;
-    const counts = {};
-    for (const m of await store.allMedia()) counts[m.part] = (counts[m.part] || 0) + 1;
-    for (const s of todo) {
+    let h = 5381; for (const s of seed) for (const ch of s.id + s.part + s.label + s.caption) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0;
+    const version = String(h);
+    if (cache.get('seedVersion') === version) return;
+    const deleted = new Set(cache.get('seedDeleted') || []);
+    const all = await store.allMedia();
+    for (const m of all) if (m.seed) await store.delMedia(m.id);
+    const order = {};
+    for (const s of seed) {
+      if (deleted.has(s.id)) continue;
       try {
         const blob = dataURLToBlob(s.data);
-        await store.putMedia({ part: s.part, label: s.label, caption: s.caption, kind: s.kind, mime: blob.type, blob, order: (counts[s.part] = (counts[s.part] || 0) + 1) - 1, created: Date.now(), seed: s.id });
-        done.add(s.id);
-      } catch (e) { /* skip; retried next launch */ }
+        await store.putMedia({ part: s.part, label: s.label, caption: s.caption, kind: s.kind, mime: blob.type, blob, order: (order[s.part] = (order[s.part] || 0) + 1) - 1, created: Date.now(), seed: s.id });
+      } catch (e) { /* skipped; retried on next launch */ return; }
     }
-    await store.set('seeded', [...done]);
+    // the owner's own uploads follow the built-in ones
+    for (const m of all) if (!m.seed) { m.order = (order[m.part] = (order[m.part] || 0) + 1) - 1; await store.putMedia(m); }
+    await store.set('seedVersion', version);
   }
 
   /* ================= boot ================= */
